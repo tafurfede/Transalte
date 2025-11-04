@@ -1,0 +1,31 @@
+{
+  "name": "translate-backend",
+  "version": "0.1.0",
+  "license": "MIT",
+  "scripts": {
+    "clean": "rm -rf dist",
+    "build": "npm run clean && esbuild --platform=node --target=node20 --bundle --sourcemap --outdir=dist src/handlers/*.ts"
+  },
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.616.0",
+    "@aws-sdk/client-s3": "^3.616.0",
+    "@aws-sdk/client-translate": "^3.616.0",
+    "@aws-sdk/client-comprehend": "^3.616.0",
+    "@aws-sdk/lib-dynamodb": "^3.616.0",
+    "@aws-sdk/s3-presigned-post": "^3.616.0",
+    "@aws-sdk/s3-request-presigner": "^3.616.0",
+    "fast-xml-parser": "^4.3.2",
+    "pizzip": "^3.1.7",
+    "mammoth": "^1.6.0",
+    "pdf-parse": "^1.1.1",
+    "pdfkit": "^0.15.0",
+    "uuid": "^11.0.3"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.138",
+    "@types/pdfkit": "^0.13.6",
+    "@types/node": "^20.12.12",
+    "esbuild": "^0.23.0",
+    "typescript": "^5.4.5"
+  }
+}
