@@ -151,8 +151,8 @@ function App() {
   return (
     <div className="page">
       <header>
-        <h1>AWS Translate Demo</h1>
-        <p>Upload a text-based file, pick a language, and receive a translated copy.</p>
+        <h1>TIMS Document Translate</h1>
+        <p>Securely submit internal documents, choose the destination language, and receive a reviewed translation ready for clients.</p>
       </header>
 
       <section className="card">
