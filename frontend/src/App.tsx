@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { fetchStatus, requestUploadUrl } from './api';
 import { TranslationJob } from './types';
@@ -13,29 +13,70 @@ const LANGUAGES = [
 ];
 
 const POLL_INTERVAL = 3000;
+const MAX_FILES_PER_BATCH = 10;
+
+type JobState = {
+  job: TranslationJob;
+  downloadUrl: string;
+};
 
 function App() {
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [targetLanguage, setTargetLanguage] = useState('en');
-  const [jobId, setJobId] = useState('');
-  const [job, setJob] = useState<TranslationJob | null>(null);
-  const [downloadUrl, setDownloadUrl] = useState('');
+  const [jobs, setJobs] = useState<Record<string, JobState>>({});
   const [error, setError] = useState('');
   const [isUploading, setUploading] = useState(false);
-  const [isPolling, setPolling] = useState(false);
+  const pollingTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+
+  const jobEntries = useMemo(() => Object.entries(jobs), [jobs]);
+  const hasActiveJobs = useMemo(
+    () => jobEntries.some(([, data]) => !['COMPLETED', 'FAILED'].includes(data.job.status)),
+    [jobEntries],
+  );
+
+  const getStatusMessage = useCallback((currentJob?: TranslationJob | null) => {
+    if (!currentJob) return 'Waiting to start translation…';
+    if (currentJob.status === 'FAILED') return currentJob.errorMessage ?? 'Translation failed';
+    if (currentJob.status === 'VERIFYING') return 'Checking translated file before release…';
+    if (currentJob.status === 'COMPLETED') {
+      return currentJob.verificationDetails
+        ? `Translation ready (${currentJob.verificationDetails})`
+        : 'Translation ready';
+    }
+    return `Current status: ${currentJob.status}`;
+  }, []);
+
+  const clearTimer = useCallback((jobId: string) => {
+    const existing = pollingTimers.current[jobId];
+    if (existing) {
+      clearTimeout(existing);
+      delete pollingTimers.current[jobId];
+    }
+  }, []);
+
+  useEffect(
+    () => () => {
+      Object.values(pollingTimers.current).forEach((timer) => clearTimeout(timer));
+    },
+    [],
+  );
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles?.length) {
-      setSelectedFile(acceptedFiles[0]);
-      setJob(null);
-      setJobId('');
-      setDownloadUrl('');
+      if (acceptedFiles.length > MAX_FILES_PER_BATCH) {
+        setError(
+          `Select up to ${MAX_FILES_PER_BATCH} files per batch. Only the first ${MAX_FILES_PER_BATCH} were added.`,
+        );
+      } else {
+        setError('');
+      }
+      setSelectedFiles(acceptedFiles.slice(0, MAX_FILES_PER_BATCH));
     }
   }, []);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    multiple: false,
+    multiple: true,
     maxSize: 5 * 1024 * 1024,
     accept: {
       'text/plain': ['.txt'],
@@ -46,76 +87,55 @@ function App() {
     },
   });
 
-  const disabled = !selectedFile || isUploading;
+  const disabled = !selectedFiles.length || isUploading;
 
-  const statusMessage = useMemo(() => {
-    if (!job) return 'Waiting to start translation…';
-    if (job.status === 'FAILED') return job.errorMessage ?? 'Translation failed';
-    if (job.status === 'VERIFYING') return 'Checking translated file before release…';
-    if (job.status === 'COMPLETED') {
-      return job.verificationDetails
-        ? `Translation ready (${job.verificationDetails})`
-        : 'Translation ready';
-    }
-    return `Current status: ${job.status}`;
-  }, [job]);
+  const pollJobStatus = useCallback(
+    (jobId: string) => {
+      const run = async () => {
+        try {
+          const result = await fetchStatus(jobId);
+          setJobs((prev) => ({
+            ...prev,
+            [jobId]: {
+              ...(prev[jobId] ?? { downloadUrl: '' }),
+              job: result.job,
+              downloadUrl: result.downloadUrl ?? '',
+            },
+          }));
 
-  useEffect(() => {
-    if (!jobId) return;
-
-    let active = true;
-    setPolling(true);
-
-    const run = async () => {
-      try {
-        const result = await fetchStatus(jobId);
-        if (!active) return;
-        setJob(result.job);
-        setDownloadUrl(result.downloadUrl ?? '');
-        if (['COMPLETED', 'FAILED'].includes(result.job.status)) {
-          setPolling(false);
-          return;
+          if (!['COMPLETED', 'FAILED'].includes(result.job.status)) {
+            clearTimer(jobId);
+            pollingTimers.current[jobId] = setTimeout(run, POLL_INTERVAL);
+          } else {
+            clearTimer(jobId);
+          }
+        } catch (err) {
+          console.error(err);
+          setError('Failed to fetch job status. Retrying…');
+          clearTimer(jobId);
+          pollingTimers.current[jobId] = setTimeout(run, POLL_INTERVAL * 2);
         }
-      } catch (err) {
-        console.error(err);
-        setError('Failed to fetch status');
-      }
+      };
 
-      if (active) {
-        setTimeout(run, POLL_INTERVAL);
-      }
-    };
+      run();
+    },
+    [clearTimer, setError],
+  );
 
-    run();
-
-    return () => {
-      active = false;
-      setPolling(false);
-    };
-  }, [jobId]);
-
-  const handleUpload = async () => {
-    if (!selectedFile) {
-      setError('Please select a file first');
-      return;
-    }
-
-    setError('');
-    setUploading(true);
-
-    try {
-      const extension = selectedFile.name.split('.').pop();
+  const startTranslationForFile = useCallback(
+    async (file: File) => {
+      const extension = file.name.split('.').pop();
       const { jobId: newJobId, upload } = await requestUploadUrl({
-        fileName: selectedFile.name,
+        fileName: file.name,
         targetLanguage,
-        contentType: selectedFile.type || 'text/plain',
+        contentType: file.type || 'text/plain',
       });
 
       const formData = new FormData();
       Object.entries(upload.fields).forEach(([key, value]) => {
         formData.append(key, value);
       });
-      formData.append('file', selectedFile);
+      formData.append('file', file);
 
       const response = await fetch(upload.url, {
         method: 'POST',
@@ -126,26 +146,55 @@ function App() {
         throw new Error('Upload to S3 failed');
       }
 
-      setJobId(newJobId);
-      setJob({
+      const now = new Date().toISOString();
+      const placeholder: TranslationJob = {
         jobId: newJobId,
-        fileName: selectedFile.name,
+        fileName: file.name,
         sourceLanguage: 'auto',
         targetLanguage,
         status: 'UPLOADING',
         inputKey: upload.fields.key,
-        contentType: selectedFile.type,
+        contentType: file.type,
         fileExtension: extension?.toLowerCase(),
         verificationStatus: 'PENDING',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      });
-    } catch (err) {
-      console.error(err);
-      setError('Unable to start upload. Check logs and API URL.');
-    } finally {
-      setUploading(false);
+        createdAt: now,
+        updatedAt: now,
+      };
+
+      setJobs((prev) => ({
+        ...prev,
+        [newJobId]: { job: placeholder, downloadUrl: '' },
+      }));
+
+      pollJobStatus(newJobId);
+    },
+    [pollJobStatus, targetLanguage],
+  );
+
+  const handleUpload = async () => {
+    if (!selectedFiles.length) {
+      setError('Please select at least one file');
+      return;
     }
+
+    setError('');
+    setUploading(true);
+
+    let encounteredError = false;
+    for (const file of selectedFiles.slice(0, MAX_FILES_PER_BATCH)) {
+      try {
+        await startTranslationForFile(file);
+      } catch (err) {
+        console.error(err);
+        encounteredError = true;
+      }
+    }
+
+    if (encounteredError) {
+      setError('Some files could not be uploaded. Check the console and API logs.');
+    }
+
+    setUploading(false);
   };
 
   return (
@@ -158,12 +207,19 @@ function App() {
       <section className="card">
         <div className={`dropzone ${isDragActive ? 'active' : ''}`} {...getRootProps()}>
           <input {...getInputProps()} />
-          {selectedFile ? (
-            <p>
-              Selected: <strong>{selectedFile.name}</strong>
-            </p>
+          {selectedFiles.length ? (
+            <div>
+              <p>
+                {selectedFiles.length} file{selectedFiles.length === 1 ? '' : 's'} selected (max {MAX_FILES_PER_BATCH} per batch)
+              </p>
+              <ul className="file-list">
+                {selectedFiles.map((file) => (
+                  <li key={`${file.name}-${file.lastModified}`}>{file.name}</li>
+                ))}
+              </ul>
+            </div>
           ) : (
-            <p>Drag & drop a .txt/.md/.json/.docx/.pdf file here, or click to select</p>
+            <p>Drag & drop up to {MAX_FILES_PER_BATCH} .txt/.md/.json/.docx/.pdf files, or click to select</p>
           )}
         </div>
 
@@ -179,7 +235,7 @@ function App() {
         </label>
 
         <button className="primary" onClick={handleUpload} disabled={disabled}>
-          {isUploading ? 'Uploading…' : 'Start translation'}
+          {isUploading ? 'Uploading…' : 'Start translations'}
         </button>
 
         {error && <p className="error">{error}</p>}
@@ -187,12 +243,31 @@ function App() {
 
       <section className="card">
         <h2>Status</h2>
-        <p>{job ? statusMessage : 'No active job yet.'}</p>
-        {isPolling && <p className="muted">Polling AWS for updates…</p>}
-        {downloadUrl && job?.status === 'COMPLETED' && job.verificationStatus === 'PASSED' && (
-          <a href={downloadUrl} className="primary" target="_blank" rel="noreferrer">
-            Download translated file
-          </a>
+        {!jobEntries.length && <p>No active jobs yet.</p>}
+        {jobEntries.length > 0 && (
+          <>
+            {hasActiveJobs && <p className="muted">Polling AWS for updates…</p>}
+            <ul className="job-list">
+              {jobEntries.map(([jobId, data]) => (
+                <li key={jobId} className="job-row">
+                  <div>
+                    <strong>{data.job.fileName}</strong>
+                    <p className="muted">{getStatusMessage(data.job)}</p>
+                    {data.job.status === 'FAILED' && data.job.errorMessage && (
+                      <p className="error">{data.job.errorMessage}</p>
+                    )}
+                  </div>
+                  {data.downloadUrl &&
+                    data.job.status === 'COMPLETED' &&
+                    data.job.verificationStatus === 'PASSED' && (
+                      <a href={data.downloadUrl} className="primary" target="_blank" rel="noreferrer">
+                        Download
+                      </a>
+                    )}
+                </li>
+              ))}
+            </ul>
+          </>
         )}
       </section>
     </div>

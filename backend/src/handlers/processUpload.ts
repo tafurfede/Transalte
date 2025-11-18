@@ -152,6 +152,32 @@ const escapeAngleBrackets = (value: string) =>
 const unescapeAngleBrackets = (value: string) =>
   value.replace(new RegExp(PLACEHOLDER_OPEN, 'g'), '<').replace(new RegExp(PLACEHOLDER_CLOSE, 'g'), '>');
 
+const stripDocxPlaceholders = (buffer: Buffer): Buffer => {
+  try {
+    const zip = new PizZip(buffer);
+    let changed = false;
+
+    Object.keys(zip.files).forEach((name) => {
+      if (!name.endsWith('.xml')) return;
+      const file = zip.file(name);
+      if (!file) return;
+      const xml = file.asText();
+      if (!xml.includes(PLACEHOLDER_OPEN) && !xml.includes(PLACEHOLDER_CLOSE)) return;
+      const cleaned = unescapeAngleBrackets(xml);
+      if (cleaned !== xml) {
+        zip.file(name, cleaned);
+        changed = true;
+      }
+    });
+
+    if (!changed) return buffer;
+    return zip.generate({ type: 'nodebuffer' });
+  } catch (error) {
+    console.warn('stripDocxPlaceholders failed; returning original buffer', error);
+    return buffer;
+  }
+};
+
 const languageLabel = (code: string) => LANGUAGE_LABELS[code.toLowerCase()] ?? code;
 const normalizeLangCode = (code?: string) => code?.toLowerCase().split('-')[0];
 
@@ -200,11 +226,38 @@ const documentPairSupported = (source?: string, target?: string) => {
     return false;
   }
 
-  // Amazon Translate document support is limited to pairs that include English
+  // Amazon Translate document support is limited to pairs that include English.
+  // However, English as a *target* is producing malformed output in our flow,
+  // so we skip the document API when translating *to* English to keep behavior aligned with other languages.
+  if (tgt === 'en') return false;
+
   return src === 'en' || tgt === 'en';
 };
 
 const rewriteDocxPlaceholders = (buffer: Buffer, mode: 'escape' | 'unescape'): Buffer => {
+  const replaceAcrossXmlEntries = (input: Buffer) => {
+    if (mode !== 'unescape') return input;
+    try {
+      const zip = new PizZip(input);
+      let changed = false;
+      Object.keys(zip.files).forEach((name) => {
+        if (!name.endsWith('.xml')) return;
+        const file = zip.file(name);
+        if (!file) return;
+        const xml = file.asText();
+        if (!xml.includes(PLACEHOLDER_OPEN) && !xml.includes(PLACEHOLDER_CLOSE)) return;
+        const rebuilt = unescapeAngleBrackets(xml);
+        zip.file(name, rebuilt);
+        changed = true;
+      });
+      if (!changed) return input;
+      return zip.generate({ type: 'nodebuffer' });
+    } catch (fallbackError) {
+      console.warn('rewriteDocxPlaceholders xml-scan fallback failed; returning original buffer', fallbackError);
+      return input;
+    }
+  };
+
   try {
     const zip = new PizZip(buffer);
     const entry = zip.file('word/document.xml');
@@ -216,10 +269,22 @@ const rewriteDocxPlaceholders = (buffer: Buffer, mode: 'escape' | 'unescape'): B
     );
     const rebuiltXml = xmlBuilder.build(json);
     zip.file('word/document.xml', rebuiltXml);
-    return zip.generate({ type: 'nodebuffer' });
+    const output = zip.generate({ type: 'nodebuffer' });
+
+    // Occasionally the structured rewrite can miss nested text nodes (seen in some English outputs).
+    // Run a broad XML scan to ensure all placeholders are gone.
+    if (mode === 'unescape') {
+      if (rebuiltXml.includes(PLACEHOLDER_OPEN) || rebuiltXml.includes(PLACEHOLDER_CLOSE)) {
+        return replaceAcrossXmlEntries(output);
+      }
+      // Even if document.xml is clean, scan other XML parts (headers/footers).
+      return replaceAcrossXmlEntries(output);
+    }
+
+    return output;
   } catch (error) {
-    console.warn('rewriteDocxPlaceholders failed; returning original buffer', error);
-    return buffer;
+    console.warn('rewriteDocxPlaceholders failed; attempting fallback', error);
+    return replaceAcrossXmlEntries(buffer);
   }
 };
 
@@ -254,7 +319,7 @@ const translateDocumentAsset = async (
   }
 
   const rawBuffer = Buffer.from(response.TranslatedDocument.Content as Uint8Array);
-  const buffer = rewriteDocxPlaceholders(rawBuffer, 'unescape');
+  const buffer = stripDocxPlaceholders(rewriteDocxPlaceholders(rawBuffer, 'unescape'));
   const verificationText = await extractTextFromBuffer(buffer, extension);
 
   return {
@@ -447,6 +512,17 @@ export const handler = async (event: ProcessEvent) => {
             suffix,
             job.contentType,
           );
+        }
+      }
+
+      if (extension === 'docx') {
+        const cleanedBuffer = stripDocxPlaceholders(translationAsset.buffer);
+        if (cleanedBuffer !== translationAsset.buffer) {
+          translationAsset = {
+            ...translationAsset,
+            buffer: cleanedBuffer,
+            verificationText: await extractTextFromBuffer(cleanedBuffer, extension),
+          };
         }
       }
 
