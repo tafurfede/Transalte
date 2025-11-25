@@ -1,0 +1,197 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Serverless stack for drag-and-drop AWS Translate demo
+Globals:
+  Function:
+    Runtime: nodejs20.x
+    Timeout: 30
+    MemorySize: 256
+    Architectures:
+    - arm64
+Resources:
+  HttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      CorsConfiguration:
+        AllowOrigins:
+        - '*'
+        AllowHeaders:
+        - '*'
+        AllowMethods:
+        - GET
+        - POST
+    Metadata:
+      SamResourceId: HttpApi
+  UploadBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      NotificationConfiguration:
+        EventBridgeConfiguration:
+          EventBridgeEnabled: true
+      CorsConfiguration:
+        CorsRules:
+        - AllowedOrigins:
+          - '*'
+          AllowedMethods:
+          - POST
+          - GET
+          - HEAD
+          - PUT
+          AllowedHeaders:
+          - '*'
+          MaxAge: 300
+    Metadata:
+      SamResourceId: UploadBucket
+  TranslateTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+      - AttributeName: jobId
+        AttributeType: S
+      KeySchema:
+      - AttributeName: jobId
+        KeyType: HASH
+    Metadata:
+      SamResourceId: TranslateTable
+  CreateUploadUrlFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: s3://aws-sam-cli-managed-default-samclisourcebucket-pqvjzyaqycyz/06f54726da6e455a046fb0b3cbade3c1
+      Handler: Functions.Http::TranslateDemo.Functions.Http.UploadFunction::Handler
+      Runtime: dotnet8
+      Environment:
+        Variables:
+          BUCKET:
+            Ref: UploadBucket
+          TABLE_NAME:
+            Ref: TranslateTable
+      Policies:
+      - S3WritePolicy:
+          BucketName:
+            Ref: UploadBucket
+      - DynamoDBCrudPolicy:
+          TableName:
+            Ref: TranslateTable
+      Events:
+        UploadUrl:
+          Type: HttpApi
+          Properties:
+            ApiId:
+              Ref: HttpApi
+            Path: /upload-url
+            Method: POST
+    Metadata:
+      SamResourceId: CreateUploadUrlFunction
+  GetStatusFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: s3://aws-sam-cli-managed-default-samclisourcebucket-pqvjzyaqycyz/06f54726da6e455a046fb0b3cbade3c1
+      Handler: Functions.Http::TranslateDemo.Functions.Http.StatusFunction::Handler
+      Runtime: dotnet8
+      Environment:
+        Variables:
+          BUCKET:
+            Ref: UploadBucket
+          TABLE_NAME:
+            Ref: TranslateTable
+      Policies:
+      - S3ReadPolicy:
+          BucketName:
+            Ref: UploadBucket
+      - DynamoDBCrudPolicy:
+          TableName:
+            Ref: TranslateTable
+      Events:
+        Status:
+          Type: HttpApi
+          Properties:
+            ApiId:
+              Ref: HttpApi
+            Path: /status/{jobId}
+            Method: GET
+    Metadata:
+      SamResourceId: GetStatusFunction
+  ProcessJobFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: s3://aws-sam-cli-managed-default-samclisourcebucket-pqvjzyaqycyz/06f54726da6e455a046fb0b3cbade3c1
+      Handler: Functions.Http::TranslateDemo.Functions.Http.ProcessJobFunction::Handler
+      Runtime: dotnet8
+      Environment:
+        Variables:
+          BUCKET:
+            Ref: UploadBucket
+          TABLE_NAME:
+            Ref: TranslateTable
+      Policies:
+      - S3ReadPolicy:
+          BucketName:
+            Ref: UploadBucket
+      - S3WritePolicy:
+          BucketName:
+            Ref: UploadBucket
+      - DynamoDBCrudPolicy:
+          TableName:
+            Ref: TranslateTable
+      - Statement:
+        - Effect: Allow
+          Action:
+          - translate:TranslateText
+          - translate:TranslateDocument
+          - comprehend:DetectDominantLanguage
+          Resource: '*'
+      Events:
+        ProcessJob:
+          Type: HttpApi
+          Properties:
+            ApiId:
+              Ref: HttpApi
+            Path: /process/{jobId}
+            Method: POST
+    Metadata:
+      SamResourceId: ProcessJobFunction
+  ProcessUploadFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: s3://aws-sam-cli-managed-default-samclisourcebucket-pqvjzyaqycyz/e54a3c3b1bf0d714b46f9394e21163ad
+      Handler: Functions.S3::TranslateDemo.Functions.S3.ProcessUploadFunction::Handler
+      Runtime: dotnet8
+      Environment:
+        Variables:
+          BUCKET:
+            Ref: UploadBucket
+          TABLE_NAME:
+            Ref: TranslateTable
+      Policies:
+      - S3ReadPolicy:
+          BucketName:
+            Ref: UploadBucket
+      - S3WritePolicy:
+          BucketName:
+            Ref: UploadBucket
+      - DynamoDBCrudPolicy:
+          TableName:
+            Ref: TranslateTable
+      - Statement:
+        - Effect: Allow
+          Action:
+          - translate:TranslateText
+          - translate:TranslateDocument
+          - comprehend:DetectDominantLanguage
+          Resource: '*'
+    Metadata:
+      SamResourceId: ProcessUploadFunction
+Outputs:
+  ApiUrl:
+    Description: Invoke URL for HTTP API
+    Value:
+      Fn::Sub: https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com
+  BucketName:
+    Description: Bucket used for uploads and translations
+    Value:
+      Ref: UploadBucket
+  TableName:
+    Description: DynamoDB table storing translation jobs
+    Value:
+      Ref: TranslateTable

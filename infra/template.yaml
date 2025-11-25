@@ -37,26 +37,10 @@ Resources:
               - POST
               - GET
               - HEAD
+              - PUT
             AllowedHeaders:
               - '*'
             MaxAge: 300
-
-  BucketPolicy:
-    Type: AWS::S3::BucketPolicy
-    Properties:
-      Bucket: !Ref UploadBucket
-      PolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Deny
-            Principal: '*'
-            Action: 's3:*'
-            Resource:
-              - !Sub '${UploadBucket.Arn}/*'
-              - !GetAtt UploadBucket.Arn
-            Condition:
-              Bool:
-                aws:SecureTransport: false
 
   TranslateTable:
     Type: AWS::DynamoDB::Table
@@ -72,8 +56,9 @@ Resources:
   CreateUploadUrlFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: ../backend/dist
-      Handler: createUploadUrl.handler
+      CodeUri: ../artifacts/Functions.Http
+      Handler: Functions.Http::TranslateDemo.Functions.Http.UploadFunction::Handler
+      Runtime: dotnet8
       Environment:
         Variables:
           BUCKET: !Ref UploadBucket
@@ -94,8 +79,9 @@ Resources:
   GetStatusFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: ../backend/dist
-      Handler: getStatus.handler
+      CodeUri: ../artifacts/Functions.Http
+      Handler: Functions.Http::TranslateDemo.Functions.Http.StatusFunction::Handler
+      Runtime: dotnet8
       Environment:
         Variables:
           BUCKET: !Ref UploadBucket
@@ -113,11 +99,12 @@ Resources:
             Path: /status/{jobId}
             Method: GET
 
-  ProcessUploadFunction:
+  ProcessJobFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: ../backend/dist
-      Handler: processUpload.handler
+      CodeUri: ../artifacts/Functions.Http
+      Handler: Functions.Http::TranslateDemo.Functions.Http.ProcessJobFunction::Handler
+      Runtime: dotnet8
       Environment:
         Variables:
           BUCKET: !Ref UploadBucket
@@ -137,29 +124,37 @@ Resources:
                 - comprehend:DetectDominantLanguage
               Resource: '*'
       Events:
-        UploadEvent:
-          Type: EventBridgeRule
+        ProcessJob:
+          Type: HttpApi
           Properties:
-            Pattern:
-              source:
-                - aws.s3
-              detail-type:
-                - Object Created
-              detail:
-                bucket:
-                  name:
-                    - !Ref UploadBucket
-                object:
-                  key:
-                    - prefix: raw/
+            ApiId: !Ref HttpApi
+            Path: /process/{jobId}
+            Method: POST
 
-  ProcessUploadPermission:
-    Type: AWS::Lambda::Permission
+  ProcessUploadFunction:
+    Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !GetAtt ProcessUploadFunction.Arn
-      Action: lambda:InvokeFunction
-      Principal: events.amazonaws.com
-      SourceArn: !GetAtt ProcessUploadFunctionUploadEvent.Arn
+      CodeUri: ../artifacts/Functions.S3
+      Handler: Functions.S3::TranslateDemo.Functions.S3.ProcessUploadFunction::Handler
+      Runtime: dotnet8
+      Environment:
+        Variables:
+          BUCKET: !Ref UploadBucket
+          TABLE_NAME: !Ref TranslateTable
+      Policies:
+        - S3ReadPolicy:
+            BucketName: !Ref UploadBucket
+        - S3WritePolicy:
+            BucketName: !Ref UploadBucket
+        - DynamoDBCrudPolicy:
+            TableName: !Ref TranslateTable
+        - Statement:
+            - Effect: Allow
+              Action:
+                - translate:TranslateText
+                - translate:TranslateDocument
+                - comprehend:DetectDominantLanguage
+              Resource: '*'
 
 Outputs:
   ApiUrl:

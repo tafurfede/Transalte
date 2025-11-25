@@ -6,6 +6,9 @@ export const requestUploadUrl = async (body) => {
     const { data } = await api.post('/upload-url', body);
     return data;
 };
+export const triggerProcess = async (jobId) => {
+    await api.post(`/process/${jobId}`);
+};
 export const fetchStatus = async (jobId) => {
     const { data } = await api.get(`/status/${jobId}`);
     return data;

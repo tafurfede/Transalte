@@ -1,7 +1,7 @@
 import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { fetchStatus, requestUploadUrl } from './api';
+import { fetchStatus, requestUploadUrl, triggerProcess } from './api';
 const LANGUAGES = [
     { code: 'en', label: 'English' },
     { code: 'es', label: 'Spanish' },
@@ -10,11 +10,16 @@ const LANGUAGES = [
     { code: 'pt', label: 'Portuguese' },
     { code: 'ja', label: 'Japanese' },
 ];
+const FORMATS = [
+    { code: 'docx', label: 'DOCX' },
+    { code: 'xml', label: 'XML' },
+];
 const POLL_INTERVAL = 3000;
 const MAX_FILES_PER_BATCH = 10;
 function App() {
     const [selectedFiles, setSelectedFiles] = useState([]);
     const [targetLanguage, setTargetLanguage] = useState('en');
+    const [targetFormat, setTargetFormat] = useState('docx');
     const [jobs, setJobs] = useState({});
     const [error, setError] = useState('');
     const [isUploading, setUploading] = useState(false);
@@ -103,19 +108,41 @@ function App() {
         const { jobId: newJobId, upload } = await requestUploadUrl({
             fileName: file.name,
             targetLanguage,
+            outputFormat: targetFormat,
             contentType: file.type || 'text/plain',
         });
-        const formData = new FormData();
-        Object.entries(upload.fields).forEach(([key, value]) => {
-            formData.append(key, value);
-        });
-        formData.append('file', file);
-        const response = await fetch(upload.url, {
-            method: 'POST',
-            body: formData,
-        });
+        const isPostUpload = Boolean(upload.fields?.key);
+        let response;
+        if (isPostUpload) {
+            const formData = new FormData();
+            Object.entries(upload.fields).forEach(([key, value]) => {
+                formData.append(key, value);
+            });
+            formData.append('file', file);
+            response = await fetch(upload.url, {
+                method: 'POST',
+                body: formData,
+            });
+        }
+        else {
+            const headers = {};
+            const hintedType = upload.fields?.['Content-Type'] || file.type || 'application/octet-stream';
+            if (hintedType)
+                headers['Content-Type'] = hintedType;
+            response = await fetch(upload.url, {
+                method: 'PUT',
+                headers,
+                body: file,
+            });
+        }
         if (!response.ok) {
             throw new Error('Upload to S3 failed');
+        }
+        try {
+            await triggerProcess(newJobId);
+        }
+        catch (processError) {
+            console.error('Process trigger failed', processError);
         }
         const now = new Date().toISOString();
         const placeholder = {
@@ -123,8 +150,9 @@ function App() {
             fileName: file.name,
             sourceLanguage: 'auto',
             targetLanguage,
+            outputFormat: targetFormat,
             status: 'UPLOADING',
-            inputKey: upload.fields.key,
+            inputKey: upload.fields?.key || `raw/${newJobId}/${file.name}`,
             contentType: file.type,
             fileExtension: extension?.toLowerCase(),
             verificationStatus: 'PENDING',
@@ -136,7 +164,7 @@ function App() {
             [newJobId]: { job: placeholder, downloadUrl: '' },
         }));
         pollJobStatus(newJobId);
-    }, [pollJobStatus, targetLanguage]);
+    }, [pollJobStatus, targetLanguage, targetFormat]);
     const handleUpload = async () => {
         if (!selectedFiles.length) {
             setError('Please select at least one file');
@@ -159,8 +187,11 @@ function App() {
         }
         setUploading(false);
     };
-    return (_jsxs("div", { className: "page", children: [_jsxs("header", { children: [_jsx("h1", { children: "TIMS Document Translate" }), _jsx("p", { children: "Securely submit internal documents, choose the destination language, and receive a reviewed translation ready for clients." })] }), _jsxs("section", { className: "card", children: [_jsxs("div", { className: `dropzone ${isDragActive ? 'active' : ''}`, ...getRootProps(), children: [_jsx("input", { ...getInputProps() }), selectedFiles.length ? (_jsxs("div", { children: [_jsxs("p", { children: [selectedFiles.length, " file", selectedFiles.length === 1 ? '' : 's', " selected (max ", MAX_FILES_PER_BATCH, " per batch)"] }), _jsx("ul", { className: "file-list", children: selectedFiles.map((file) => (_jsx("li", { children: file.name }, `${file.name}-${file.lastModified}`))) })] })) : (_jsxs("p", { children: ["Drag & drop up to ", MAX_FILES_PER_BATCH, " .txt/.md/.json/.docx/.pdf files, or click to select"] }))] }), _jsxs("label", { className: "language-picker", children: ["Target language", _jsx("select", { value: targetLanguage, onChange: (e) => setTargetLanguage(e.target.value), children: LANGUAGES.map((language) => (_jsx("option", { value: language.code, children: language.label }, language.code))) })] }), _jsx("button", { className: "primary", onClick: handleUpload, disabled: disabled, children: isUploading ? 'Uploading…' : 'Start translations' }), error && _jsx("p", { className: "error", children: error })] }), _jsxs("section", { className: "card", children: [_jsx("h2", { children: "Status" }), !jobEntries.length && _jsx("p", { children: "No active jobs yet." }), jobEntries.length > 0 && (_jsxs(_Fragment, { children: [hasActiveJobs && _jsx("p", { className: "muted", children: "Polling AWS for updates\u2026" }), _jsx("ul", { className: "job-list", children: jobEntries.map(([jobId, data]) => (_jsxs("li", { className: "job-row", children: [_jsxs("div", { children: [_jsx("strong", { children: data.job.fileName }), _jsx("p", { className: "muted", children: getStatusMessage(data.job) }), data.job.status === 'FAILED' && data.job.errorMessage && (_jsx("p", { className: "error", children: data.job.errorMessage }))] }), data.downloadUrl &&
-                                            data.job.status === 'COMPLETED' &&
-                                            data.job.verificationStatus === 'PASSED' && (_jsx("a", { href: data.downloadUrl, className: "primary", target: "_blank", rel: "noreferrer", children: "Download" }))] }, jobId))) })] }))] })] }));
+    return (_jsxs("div", { className: "page", children: [_jsxs("header", { children: [_jsx("h1", { children: "TIMS Document Translate" }), _jsx("p", { children: "Securely submit internal documents, choose the destination language, and receive a reviewed translation ready for clients." })] }), _jsxs("section", { className: "card", children: [_jsxs("div", { className: `dropzone ${isDragActive ? 'active' : ''}`, ...getRootProps(), children: [_jsx("input", { ...getInputProps() }), selectedFiles.length ? (_jsxs("div", { children: [_jsxs("p", { children: [selectedFiles.length, " file", selectedFiles.length === 1 ? '' : 's', " selected (max ", MAX_FILES_PER_BATCH, " per batch)"] }), _jsx("ul", { className: "file-list", children: selectedFiles.map((file) => (_jsx("li", { children: file.name }, `${file.name}-${file.lastModified}`))) })] })) : (_jsxs("p", { children: ["Drag & drop up to ", MAX_FILES_PER_BATCH, " .txt/.md/.json/.docx/.pdf files, or click to select"] }))] }), _jsxs("label", { className: "language-picker", children: ["Target language", _jsx("select", { value: targetLanguage, onChange: (e) => setTargetLanguage(e.target.value), children: LANGUAGES.map((language) => (_jsx("option", { value: language.code, children: language.label }, language.code))) })] }), _jsxs("label", { className: "language-picker", children: ["Target format", _jsx("select", { value: targetFormat, onChange: (e) => setTargetFormat(e.target.value), children: FORMATS.map((format) => (_jsx("option", { value: format.code, children: format.label }, format.code))) })] }), _jsx("button", { className: "primary", onClick: handleUpload, disabled: disabled, children: isUploading ? 'Uploading…' : 'Start translations' }), error && _jsx("p", { className: "error", children: error })] }), _jsxs("section", { className: "card", children: [_jsx("h2", { children: "Status" }), !jobEntries.length && _jsx("p", { children: "No active jobs yet." }), jobEntries.length > 0 && (_jsxs(_Fragment, { children: [hasActiveJobs && _jsx("p", { className: "muted", children: "Polling AWS for updates\u2026" }), _jsx("ul", { className: "job-list", children: jobEntries.map(([jobId, data]) => {
+                                    const displayName = (data.job.outputKey && data.job.outputKey.split('/').pop()) || data.job.fileName;
+                                    return (_jsxs("li", { className: "job-row", children: [_jsxs("div", { children: [_jsx("strong", { children: displayName }), _jsx("p", { className: "muted", children: getStatusMessage(data.job) }), data.job.status === 'FAILED' && data.job.errorMessage && (_jsx("p", { className: "error", children: data.job.errorMessage }))] }), data.downloadUrl &&
+                                                data.job.status === 'COMPLETED' &&
+                                                data.job.verificationStatus === 'PASSED' && (_jsx("a", { href: data.downloadUrl, className: "primary", target: "_blank", rel: "noreferrer", download: displayName, children: "Download" }))] }, jobId));
+                                }) })] }))] })] }));
 }
 export default App;

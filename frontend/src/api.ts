@@ -10,6 +10,7 @@ export interface UploadRequest {
   targetLanguage: string;
   sourceLanguage?: string;
   contentType?: string;
+  outputFormat?: 'docx' | 'xml';
 }
 
 export interface PresignedPost {
@@ -31,6 +32,10 @@ export interface StatusResponse {
   job: TranslationJob;
   downloadUrl?: string;
 }
+
+export const triggerProcess = async (jobId: string): Promise<void> => {
+  await api.post(`/process/${jobId}`);
+};
 
 export const fetchStatus = async (jobId: string): Promise<StatusResponse> => {
   const { data } = await api.get<StatusResponse>(`/status/${jobId}`);

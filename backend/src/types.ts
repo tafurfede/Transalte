@@ -11,6 +11,7 @@ export interface TranslationJob {
   fileName: string;
   sourceLanguage: string;
   targetLanguage: string;
+  outputFormat?: 'docx' | 'xml';
   status: TranslationStatus;
   inputKey: string;
   contentType?: string;

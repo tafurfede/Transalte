@@ -1,0 +1,491 @@
+{
+  "version": 3,
+  "targets": {
+    "net8.0": {
+      "AWSSDK.Comprehend/3.7.400": {
+        "type": "package",
+        "dependencies": {
+          "AWSSDK.Core": "[3.7.400, 4.0.0)"
+        },
+        "compile": {
+          "lib/net8.0/AWSSDK.Comprehend.dll": {
+            "related": ".pdb;.xml"
+          }
+        },
+        "runtime": {
+          "lib/net8.0/AWSSDK.Comprehend.dll": {
+            "related": ".pdb;.xml"
+          }
+        }
+      },
+      "AWSSDK.Core/3.7.400": {
+        "type": "package",
+        "compile": {
+          "lib/net8.0/AWSSDK.Core.dll": {
+            "related": ".pdb;.xml"
+          }
+        },
+        "runtime": {
+          "lib/net8.0/AWSSDK.Core.dll": {
+            "related": ".pdb;.xml"
+          }
+        }
+      },
+      "AWSSDK.DynamoDBv2/3.7.400": {
+        "type": "package",
+        "dependencies": {
+          "AWSSDK.Core": "[3.7.400, 4.0.0)"
+        },
+        "compile": {
+          "lib/net8.0/AWSSDK.DynamoDBv2.dll": {
+            "related": ".pdb;.xml"
+          }
+        },
+        "runtime": {
+          "lib/net8.0/AWSSDK.DynamoDBv2.dll": {
+            "related": ".pdb;.xml"
+          }
+        }
+      },
+      "AWSSDK.S3/3.7.400": {
+        "type": "package",
+        "dependencies": {
+          "AWSSDK.Core": "[3.7.400, 4.0.0)"
+        },
+        "compile": {
+          "lib/net8.0/AWSSDK.S3.dll": {
+            "related": ".pdb;.xml"
+          }
+        },
+        "runtime": {
+          "lib/net8.0/AWSSDK.S3.dll": {
+            "related": ".pdb;.xml"
+          }
+        }
+      },
+      "AWSSDK.Translate/3.7.400": {
+        "type": "package",
+        "dependencies": {
+          "AWSSDK.Core": "[3.7.400, 4.0.0)"
+        },
+        "compile": {
+          "lib/net8.0/AWSSDK.Translate.dll": {
+            "related": ".pdb;.xml"
+          }
+        },
+        "runtime": {
+          "lib/net8.0/AWSSDK.Translate.dll": {
+            "related": ".pdb;.xml"
+          }
+        }
+      },
+      "DocumentFormat.OpenXml/3.0.2": {
+        "type": "package",
+        "dependencies": {
+          "DocumentFormat.OpenXml.Framework": "3.0.2"
+        },
+        "compile": {
+          "lib/net8.0/DocumentFormat.OpenXml.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net8.0/DocumentFormat.OpenXml.dll": {
+            "related": ".xml"
+          }
+        }
+      },
+      "DocumentFormat.OpenXml.Framework/3.0.2": {
+        "type": "package",
+        "dependencies": {
+          "System.IO.Packaging": "8.0.0"
+        },
+        "compile": {
+          "lib/net8.0/DocumentFormat.OpenXml.Framework.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net8.0/DocumentFormat.OpenXml.Framework.dll": {
+            "related": ".xml"
+          }
+        }
+      },
+      "System.IO.Packaging/8.0.0": {
+        "type": "package",
+        "compile": {
+          "lib/net8.0/System.IO.Packaging.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net8.0/System.IO.Packaging.dll": {
+            "related": ".xml"
+          }
+        },
+        "build": {
+          "buildTransitive/net6.0/_._": {}
+        }
+      },
+      "Domain/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v8.0",
+        "compile": {
+          "bin/placeholder/Domain.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/Domain.dll": {}
+        }
+      }
+    }
+  },
+  "libraries": {
+    "AWSSDK.Comprehend/3.7.400": {
+      "sha512": "xh2O+9PxsTVMbGPlatXvF7B+FQ+pg/RnDo7TiJFg73MG9Vf3bvw1EZemziunpbnkhaxpHISRLL3wlV7nBRbEhg==",
+      "type": "package",
+      "path": "awssdk.comprehend/3.7.400",
+      "hasTools": true,
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "analyzers/dotnet/cs/AWSSDK.Comprehend.CodeAnalysis.dll",
+        "analyzers/dotnet/cs/SharedAnalysisCode.dll",
+        "awssdk.comprehend.3.7.400.nupkg.sha512",
+        "awssdk.comprehend.nuspec",
+        "images/AWSLogo.png",
+        "lib/net35/AWSSDK.Comprehend.dll",
+        "lib/net35/AWSSDK.Comprehend.pdb",
+        "lib/net35/AWSSDK.Comprehend.xml",
+        "lib/net45/AWSSDK.Comprehend.dll",
+        "lib/net45/AWSSDK.Comprehend.pdb",
+        "lib/net45/AWSSDK.Comprehend.xml",
+        "lib/net8.0/AWSSDK.Comprehend.dll",
+        "lib/net8.0/AWSSDK.Comprehend.pdb",
+        "lib/net8.0/AWSSDK.Comprehend.xml",
+        "lib/netcoreapp3.1/AWSSDK.Comprehend.dll",
+        "lib/netcoreapp3.1/AWSSDK.Comprehend.pdb",
+        "lib/netcoreapp3.1/AWSSDK.Comprehend.xml",
+        "lib/netstandard2.0/AWSSDK.Comprehend.dll",
+        "lib/netstandard2.0/AWSSDK.Comprehend.pdb",
+        "lib/netstandard2.0/AWSSDK.Comprehend.xml",
+        "tools/install.ps1",
+        "tools/uninstall.ps1"
+      ]
+    },
+    "AWSSDK.Core/3.7.400": {
+      "sha512": "qw+WGhxcYtZ6wc1uibOu9XXLsfUpQ1r+gWa0euFnm1e9HowQbcwvKvOqQzwBNqIBO7S5IJ26T9kV/eFiwvZAkQ==",
+      "type": "package",
+      "path": "awssdk.core/3.7.400",
+      "hasTools": true,
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "awssdk.core.3.7.400.nupkg.sha512",
+        "awssdk.core.nuspec",
+        "images/AWSLogo.png",
+        "lib/net35/AWSSDK.Core.dll",
+        "lib/net35/AWSSDK.Core.pdb",
+        "lib/net35/AWSSDK.Core.xml",
+        "lib/net45/AWSSDK.Core.dll",
+        "lib/net45/AWSSDK.Core.pdb",
+        "lib/net45/AWSSDK.Core.xml",
+        "lib/net8.0/AWSSDK.Core.dll",
+        "lib/net8.0/AWSSDK.Core.pdb",
+        "lib/net8.0/AWSSDK.Core.xml",
+        "lib/netcoreapp3.1/AWSSDK.Core.dll",
+        "lib/netcoreapp3.1/AWSSDK.Core.pdb",
+        "lib/netcoreapp3.1/AWSSDK.Core.xml",
+        "lib/netstandard2.0/AWSSDK.Core.dll",
+        "lib/netstandard2.0/AWSSDK.Core.pdb",
+        "lib/netstandard2.0/AWSSDK.Core.xml",
+        "tools/account-management.ps1"
+      ]
+    },
+    "AWSSDK.DynamoDBv2/3.7.400": {
+      "sha512": "uTwuX47y1RDxEVzdiGwmME4NYkY9ntvnNOxSICNNSK15vYJEaZImoasBHxdT/EZyHaaNNFdDKCvc8NXJYQVmCg==",
+      "type": "package",
+      "path": "awssdk.dynamodbv2/3.7.400",
+      "hasTools": true,
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "analyzers/dotnet/cs/AWSSDK.DynamoDBv2.CodeAnalysis.dll",
+        "analyzers/dotnet/cs/SharedAnalysisCode.dll",
+        "awssdk.dynamodbv2.3.7.400.nupkg.sha512",
+        "awssdk.dynamodbv2.nuspec",
+        "images/AWSLogo.png",
+        "lib/net35/AWSSDK.DynamoDBv2.dll",
+        "lib/net35/AWSSDK.DynamoDBv2.pdb",
+        "lib/net35/AWSSDK.DynamoDBv2.xml",
+        "lib/net45/AWSSDK.DynamoDBv2.dll",
+        "lib/net45/AWSSDK.DynamoDBv2.pdb",
+        "lib/net45/AWSSDK.DynamoDBv2.xml",
+        "lib/net8.0/AWSSDK.DynamoDBv2.dll",
+        "lib/net8.0/AWSSDK.DynamoDBv2.pdb",
+        "lib/net8.0/AWSSDK.DynamoDBv2.xml",
+        "lib/netcoreapp3.1/AWSSDK.DynamoDBv2.dll",
+        "lib/netcoreapp3.1/AWSSDK.DynamoDBv2.pdb",
+        "lib/netcoreapp3.1/AWSSDK.DynamoDBv2.xml",
+        "lib/netstandard2.0/AWSSDK.DynamoDBv2.dll",
+        "lib/netstandard2.0/AWSSDK.DynamoDBv2.pdb",
+        "lib/netstandard2.0/AWSSDK.DynamoDBv2.xml",
+        "tools/install.ps1",
+        "tools/uninstall.ps1"
+      ]
+    },
+    "AWSSDK.S3/3.7.400": {
+      "sha512": "OWCTOIDLd9tisJBigWlws3zXXU8IPc6MGracx0zojB4z0ki7ruL77ZWbj5j9j3zSVvnnLe4uOL/4w2lco/9kBw==",
+      "type": "package",
+      "path": "awssdk.s3/3.7.400",
+      "hasTools": true,
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "analyzers/dotnet/cs/AWSSDK.S3.CodeAnalysis.dll",
+        "analyzers/dotnet/cs/SharedAnalysisCode.dll",
+        "awssdk.s3.3.7.400.nupkg.sha512",
+        "awssdk.s3.nuspec",
+        "images/AWSLogo.png",
+        "lib/net35/AWSSDK.S3.dll",
+        "lib/net35/AWSSDK.S3.pdb",
+        "lib/net35/AWSSDK.S3.xml",
+        "lib/net45/AWSSDK.S3.dll",
+        "lib/net45/AWSSDK.S3.pdb",
+        "lib/net45/AWSSDK.S3.xml",
+        "lib/net8.0/AWSSDK.S3.dll",
+        "lib/net8.0/AWSSDK.S3.pdb",
+        "lib/net8.0/AWSSDK.S3.xml",
+        "lib/netcoreapp3.1/AWSSDK.S3.dll",
+        "lib/netcoreapp3.1/AWSSDK.S3.pdb",
+        "lib/netcoreapp3.1/AWSSDK.S3.xml",
+        "lib/netstandard2.0/AWSSDK.S3.dll",
+        "lib/netstandard2.0/AWSSDK.S3.pdb",
+        "lib/netstandard2.0/AWSSDK.S3.xml",
+        "tools/install.ps1",
+        "tools/uninstall.ps1"
+      ]
+    },
+    "AWSSDK.Translate/3.7.400": {
+      "sha512": "NE4KDvIUjKEs0004ImJhAqEJu0JY+IySGmKyUw8OjYY6gcPQDcF908lCkic+wUjRkd9/Xf46UUrkAPbodyXNYQ==",
+      "type": "package",
+      "path": "awssdk.translate/3.7.400",
+      "hasTools": true,
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "analyzers/dotnet/cs/AWSSDK.Translate.CodeAnalysis.dll",
+        "analyzers/dotnet/cs/SharedAnalysisCode.dll",
+        "awssdk.translate.3.7.400.nupkg.sha512",
+        "awssdk.translate.nuspec",
+        "images/AWSLogo.png",
+        "lib/net35/AWSSDK.Translate.dll",
+        "lib/net35/AWSSDK.Translate.pdb",
+        "lib/net35/AWSSDK.Translate.xml",
+        "lib/net45/AWSSDK.Translate.dll",
+        "lib/net45/AWSSDK.Translate.pdb",
+        "lib/net45/AWSSDK.Translate.xml",
+        "lib/net8.0/AWSSDK.Translate.dll",
+        "lib/net8.0/AWSSDK.Translate.pdb",
+        "lib/net8.0/AWSSDK.Translate.xml",
+        "lib/netcoreapp3.1/AWSSDK.Translate.dll",
+        "lib/netcoreapp3.1/AWSSDK.Translate.pdb",
+        "lib/netcoreapp3.1/AWSSDK.Translate.xml",
+        "lib/netstandard2.0/AWSSDK.Translate.dll",
+        "lib/netstandard2.0/AWSSDK.Translate.pdb",
+        "lib/netstandard2.0/AWSSDK.Translate.xml",
+        "tools/install.ps1",
+        "tools/uninstall.ps1"
+      ]
+    },
+    "DocumentFormat.OpenXml/3.0.2": {
+      "sha512": "gqjP/BxKWgwAWwPAN+RpKaMOiidPM07F+mAxiiW184/MnkHnkk12Qo7cRB0wuq4kOZUrUzQ9EUO966hUy/wKBw==",
+      "type": "package",
+      "path": "documentformat.openxml/3.0.2",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "README.md",
+        "documentformat.openxml.3.0.2.nupkg.sha512",
+        "documentformat.openxml.nuspec",
+        "icon.png",
+        "lib/net35/DocumentFormat.OpenXml.dll",
+        "lib/net35/DocumentFormat.OpenXml.xml",
+        "lib/net40/DocumentFormat.OpenXml.dll",
+        "lib/net40/DocumentFormat.OpenXml.xml",
+        "lib/net46/DocumentFormat.OpenXml.dll",
+        "lib/net46/DocumentFormat.OpenXml.xml",
+        "lib/net8.0/DocumentFormat.OpenXml.dll",
+        "lib/net8.0/DocumentFormat.OpenXml.xml",
+        "lib/netstandard2.0/DocumentFormat.OpenXml.dll",
+        "lib/netstandard2.0/DocumentFormat.OpenXml.xml"
+      ]
+    },
+    "DocumentFormat.OpenXml.Framework/3.0.2": {
+      "sha512": "ILRCJu2dUJDv27ZCQDftD7AZSuBgKg+ZSUF9dg2dk8qcIED7oM42y/cvZIm0mev80nj2QMzpxthX87+AebzHug==",
+      "type": "package",
+      "path": "documentformat.openxml.framework/3.0.2",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "README.md",
+        "documentformat.openxml.framework.3.0.2.nupkg.sha512",
+        "documentformat.openxml.framework.nuspec",
+        "icon.png",
+        "lib/net35/DocumentFormat.OpenXml.Framework.dll",
+        "lib/net35/DocumentFormat.OpenXml.Framework.xml",
+        "lib/net40/DocumentFormat.OpenXml.Framework.dll",
+        "lib/net40/DocumentFormat.OpenXml.Framework.xml",
+        "lib/net46/DocumentFormat.OpenXml.Framework.dll",
+        "lib/net46/DocumentFormat.OpenXml.Framework.xml",
+        "lib/net6.0/DocumentFormat.OpenXml.Framework.dll",
+        "lib/net6.0/DocumentFormat.OpenXml.Framework.xml",
+        "lib/net8.0/DocumentFormat.OpenXml.Framework.dll",
+        "lib/net8.0/DocumentFormat.OpenXml.Framework.xml",
+        "lib/netstandard2.0/DocumentFormat.OpenXml.Framework.dll",
+        "lib/netstandard2.0/DocumentFormat.OpenXml.Framework.xml"
+      ]
+    },
+    "System.IO.Packaging/8.0.0": {
+      "sha512": "8g1V4YRpdGAxFcK8v9OjuMdIOJSpF30Zb1JGicwVZhly3I994WFyBdV6mQEo8d3T+URQe55/M0U0eIH0Hts1bg==",
+      "type": "package",
+      "path": "system.io.packaging/8.0.0",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "Icon.png",
+        "LICENSE.TXT",
+        "THIRD-PARTY-NOTICES.TXT",
+        "buildTransitive/net461/System.IO.Packaging.targets",
+        "buildTransitive/net462/_._",
+        "buildTransitive/net6.0/_._",
+        "buildTransitive/netcoreapp2.0/System.IO.Packaging.targets",
+        "lib/net462/System.IO.Packaging.dll",
+        "lib/net462/System.IO.Packaging.xml",
+        "lib/net6.0/System.IO.Packaging.dll",
+        "lib/net6.0/System.IO.Packaging.xml",
+        "lib/net7.0/System.IO.Packaging.dll",
+        "lib/net7.0/System.IO.Packaging.xml",
+        "lib/net8.0/System.IO.Packaging.dll",
+        "lib/net8.0/System.IO.Packaging.xml",
+        "lib/netstandard2.0/System.IO.Packaging.dll",
+        "lib/netstandard2.0/System.IO.Packaging.xml",
+        "system.io.packaging.8.0.0.nupkg.sha512",
+        "system.io.packaging.nuspec",
+        "useSharedDesignerContext.txt"
+      ]
+    },
+    "Domain/1.0.0": {
+      "type": "project",
+      "path": "../Domain/Domain.csproj",
+      "msbuildProject": "../Domain/Domain.csproj"
+    }
+  },
+  "projectFileDependencyGroups": {
+    "net8.0": [
+      "AWSSDK.Comprehend >= 3.7.400",
+      "AWSSDK.DynamoDBv2 >= 3.7.400",
+      "AWSSDK.S3 >= 3.7.400",
+      "AWSSDK.Translate >= 3.7.400",
+      "DocumentFormat.OpenXml >= 3.0.2",
+      "Domain >= 1.0.0"
+    ]
+  },
+  "packageFolders": {
+    "/Users/federicotafur/.nuget/packages/": {}
+  },
+  "project": {
+    "version": "1.0.0",
+    "restore": {
+      "projectUniqueName": "/Users/federicotafur/Desktop/NexaDev/Transalte/backend-dotnet/src/Infrastructure/Infrastructure.csproj",
+      "projectName": "Infrastructure",
+      "projectPath": "/Users/federicotafur/Desktop/NexaDev/Transalte/backend-dotnet/src/Infrastructure/Infrastructure.csproj",
+      "packagesPath": "/Users/federicotafur/.nuget/packages/",
+      "outputPath": "/Users/federicotafur/Desktop/NexaDev/Transalte/backend-dotnet/src/Infrastructure/obj/",
+      "projectStyle": "PackageReference",
+      "configFilePaths": [
+        "/Users/federicotafur/.nuget/NuGet/NuGet.Config"
+      ],
+      "originalTargetFrameworks": [
+        "net8.0"
+      ],
+      "sources": {
+        "https://api.nuget.org/v3/index.json": {}
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "projectReferences": {
+            "/Users/federicotafur/Desktop/NexaDev/Transalte/backend-dotnet/src/Domain/Domain.csproj": {
+              "projectPath": "/Users/federicotafur/Desktop/NexaDev/Transalte/backend-dotnet/src/Domain/Domain.csproj"
+            }
+          }
+        }
+      },
+      "warningProperties": {
+        "warnAsError": [
+          "NU1605"
+        ]
+      },
+      "restoreAuditProperties": {
+        "enableAudit": "true",
+        "auditLevel": "low",
+        "auditMode": "direct"
+      },
+      "SdkAnalysisLevel": "10.0.100"
+    },
+    "frameworks": {
+      "net8.0": {
+        "targetAlias": "net8.0",
+        "dependencies": {
+          "AWSSDK.Comprehend": {
+            "target": "Package",
+            "version": "[3.7.400, )"
+          },
+          "AWSSDK.DynamoDBv2": {
+            "target": "Package",
+            "version": "[3.7.400, )"
+          },
+          "AWSSDK.S3": {
+            "target": "Package",
+            "version": "[3.7.400, )"
+          },
+          "AWSSDK.Translate": {
+            "target": "Package",
+            "version": "[3.7.400, )"
+          },
+          "DocumentFormat.OpenXml": {
+            "target": "Package",
+            "version": "[3.0.2, )"
+          }
+        },
+        "imports": [
+          "net461",
+          "net462",
+          "net47",
+          "net471",
+          "net472",
+          "net48",
+          "net481"
+        ],
+        "assetTargetFallback": true,
+        "warn": true,
+        "downloadDependencies": [
+          {
+            "name": "Microsoft.AspNetCore.App.Ref",
+            "version": "[8.0.22, 8.0.22]"
+          },
+          {
+            "name": "Microsoft.NETCore.App.Ref",
+            "version": "[8.0.22, 8.0.22]"
+          }
+        ],
+        "frameworkReferences": {
+          "Microsoft.NETCore.App": {
+            "privateAssets": "all"
+          }
+        },
+        "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/10.0.100/PortableRuntimeIdentifierGraph.json"
+      }
+    }
+  }
+}

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { fetchStatus, requestUploadUrl } from './api';
+import { fetchStatus, requestUploadUrl, triggerProcess } from './api';
 import { TranslationJob } from './types';
 
 const LANGUAGES = [
@@ -10,6 +10,11 @@ const LANGUAGES = [
   { code: 'de', label: 'German' },
   { code: 'pt', label: 'Portuguese' },
   { code: 'ja', label: 'Japanese' },
+];
+
+const FORMATS = [
+  { code: 'docx', label: 'DOCX' },
+  { code: 'xml', label: 'XML' },
 ];
 
 const POLL_INTERVAL = 3000;
@@ -23,6 +28,7 @@ type JobState = {
 function App() {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [targetLanguage, setTargetLanguage] = useState('en');
+  const [targetFormat, setTargetFormat] = useState<'docx' | 'xml'>('docx');
   const [jobs, setJobs] = useState<Record<string, JobState>>({});
   const [error, setError] = useState('');
   const [isUploading, setUploading] = useState(false);
@@ -128,22 +134,44 @@ function App() {
       const { jobId: newJobId, upload } = await requestUploadUrl({
         fileName: file.name,
         targetLanguage,
+        outputFormat: targetFormat,
         contentType: file.type || 'text/plain',
       });
 
-      const formData = new FormData();
-      Object.entries(upload.fields).forEach(([key, value]) => {
-        formData.append(key, value);
-      });
-      formData.append('file', file);
+      const isPostUpload = Boolean((upload.fields as Record<string, string | undefined>)?.key);
+      let response: Response;
 
-      const response = await fetch(upload.url, {
-        method: 'POST',
-        body: formData,
-      });
+      if (isPostUpload) {
+        const formData = new FormData();
+        Object.entries(upload.fields).forEach(([key, value]) => {
+          formData.append(key, value);
+        });
+        formData.append('file', file);
+
+        response = await fetch(upload.url, {
+          method: 'POST',
+          body: formData,
+        });
+      } else {
+        const headers: Record<string, string> = {};
+        const hintedType = upload.fields?.['Content-Type'] || file.type || 'application/octet-stream';
+        if (hintedType) headers['Content-Type'] = hintedType;
+
+        response = await fetch(upload.url, {
+          method: 'PUT',
+          headers,
+          body: file,
+        });
+      }
 
       if (!response.ok) {
         throw new Error('Upload to S3 failed');
+      }
+
+      try {
+        await triggerProcess(newJobId);
+      } catch (processError) {
+        console.error('Process trigger failed', processError);
       }
 
       const now = new Date().toISOString();
@@ -152,8 +180,9 @@ function App() {
         fileName: file.name,
         sourceLanguage: 'auto',
         targetLanguage,
+        outputFormat: targetFormat,
         status: 'UPLOADING',
-        inputKey: upload.fields.key,
+        inputKey: (upload.fields as any)?.key || `raw/${newJobId}/${file.name}`,
         contentType: file.type,
         fileExtension: extension?.toLowerCase(),
         verificationStatus: 'PENDING',
@@ -168,7 +197,7 @@ function App() {
 
       pollJobStatus(newJobId);
     },
-    [pollJobStatus, targetLanguage],
+    [pollJobStatus, targetLanguage, targetFormat],
   );
 
   const handleUpload = async () => {
@@ -234,6 +263,17 @@ function App() {
           </select>
         </label>
 
+        <label className="language-picker">
+          Target format
+          <select value={targetFormat} onChange={(e) => setTargetFormat(e.target.value as 'docx' | 'xml')}>
+            {FORMATS.map((format) => (
+              <option key={format.code} value={format.code}>
+                {format.label}
+              </option>
+            ))}
+          </select>
+        </label>
+
         <button className="primary" onClick={handleUpload} disabled={disabled}>
           {isUploading ? 'Uploading…' : 'Start translations'}
         </button>
@@ -248,24 +288,34 @@ function App() {
           <>
             {hasActiveJobs && <p className="muted">Polling AWS for updates…</p>}
             <ul className="job-list">
-              {jobEntries.map(([jobId, data]) => (
-                <li key={jobId} className="job-row">
-                  <div>
-                    <strong>{data.job.fileName}</strong>
-                    <p className="muted">{getStatusMessage(data.job)}</p>
-                    {data.job.status === 'FAILED' && data.job.errorMessage && (
-                      <p className="error">{data.job.errorMessage}</p>
-                    )}
-                  </div>
-                  {data.downloadUrl &&
-                    data.job.status === 'COMPLETED' &&
-                    data.job.verificationStatus === 'PASSED' && (
-                      <a href={data.downloadUrl} className="primary" target="_blank" rel="noreferrer">
-                        Download
-                      </a>
-                    )}
-                </li>
-              ))}
+              {jobEntries.map(([jobId, data]) => {
+                const displayName =
+                  (data.job.outputKey && data.job.outputKey.split('/').pop()) || data.job.fileName;
+                return (
+                  <li key={jobId} className="job-row">
+                    <div>
+                      <strong>{displayName}</strong>
+                      <p className="muted">{getStatusMessage(data.job)}</p>
+                      {data.job.status === 'FAILED' && data.job.errorMessage && (
+                        <p className="error">{data.job.errorMessage}</p>
+                      )}
+                    </div>
+                    {data.downloadUrl &&
+                      data.job.status === 'COMPLETED' &&
+                      data.job.verificationStatus === 'PASSED' && (
+                        <a
+                          href={data.downloadUrl}
+                          className="primary"
+                          target="_blank"
+                          rel="noreferrer"
+                          download={displayName}
+                        >
+                          Download
+                        </a>
+                      )}
+                  </li>
+                );
+              })}
             </ul>
           </>
         )}

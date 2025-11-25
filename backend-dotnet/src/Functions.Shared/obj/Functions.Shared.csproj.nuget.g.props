@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Condition=" '$(ExcludeRestorePackageImports)' != 'true' ">
+    <RestoreSuccess Condition=" '$(RestoreSuccess)' == '' ">True</RestoreSuccess>
+    <RestoreTool Condition=" '$(RestoreTool)' == '' ">NuGet</RestoreTool>
+    <ProjectAssetsFile Condition=" '$(ProjectAssetsFile)' == '' ">$(MSBuildThisFileDirectory)project.assets.json</ProjectAssetsFile>
+    <NuGetPackageRoot Condition=" '$(NuGetPackageRoot)' == '' ">/Users/federicotafur/.nuget/packages/</NuGetPackageRoot>
+    <NuGetPackageFolders Condition=" '$(NuGetPackageFolders)' == '' ">/Users/federicotafur/.nuget/packages/</NuGetPackageFolders>
+    <NuGetProjectStyle Condition=" '$(NuGetProjectStyle)' == '' ">PackageReference</NuGetProjectStyle>
+    <NuGetToolVersion Condition=" '$(NuGetToolVersion)' == '' ">7.0.0</NuGetToolVersion>
+  </PropertyGroup>
+  <ItemGroup Condition=" '$(ExcludeRestorePackageImports)' != 'true' ">
+    <SourceRoot Include="/Users/federicotafur/.nuget/packages/" />
+  </ItemGroup>
+  <PropertyGroup Condition=" '$(ExcludeRestorePackageImports)' != 'true' ">
+    <PkgAWSSDK_Core Condition=" '$(PkgAWSSDK_Core)' == '' ">/Users/federicotafur/.nuget/packages/awssdk.core/3.7.400</PkgAWSSDK_Core>
+    <PkgAWSSDK_Translate Condition=" '$(PkgAWSSDK_Translate)' == '' ">/Users/federicotafur/.nuget/packages/awssdk.translate/3.7.400</PkgAWSSDK_Translate>
+    <PkgAWSSDK_S3 Condition=" '$(PkgAWSSDK_S3)' == '' ">/Users/federicotafur/.nuget/packages/awssdk.s3/3.7.400</PkgAWSSDK_S3>
+    <PkgAWSSDK_DynamoDBv2 Condition=" '$(PkgAWSSDK_DynamoDBv2)' == '' ">/Users/federicotafur/.nuget/packages/awssdk.dynamodbv2/3.7.400</PkgAWSSDK_DynamoDBv2>
+    <PkgAWSSDK_Comprehend Condition=" '$(PkgAWSSDK_Comprehend)' == '' ">/Users/federicotafur/.nuget/packages/awssdk.comprehend/3.7.400</PkgAWSSDK_Comprehend>
+  </PropertyGroup>
+</Project>
