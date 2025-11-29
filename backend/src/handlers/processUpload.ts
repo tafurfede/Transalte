@@ -41,14 +41,57 @@ const EXTENSION_CONTENT_TYPES: Record<string, string> = {
   json: 'application/json',
 };
 
-const LANGUAGE_LABELS: Record<string, string> = {
-  en: 'English',
-  es: 'Spanish',
-  fr: 'French',
-  de: 'German',
-  pt: 'Portuguese',
-  ja: 'Japanese',
+const LANGUAGE_FILENAME_SLUGS: Record<string, string> = {
+  en: 'en',
+  es: 'sp',
+  sp: 'sp',
+  english: 'en',
+  spanish: 'sp',
+  fr: 'fr',
+  french: 'fr',
+  de: 'de',
+  german: 'de',
+  pt: 'pt',
+  portuguese: 'pt',
+  ja: 'ja',
+  japanese: 'ja',
+  ko: 'ko',
+  korean: 'ko',
+  zh: 'zh',
+  chinese: 'zh',
+  it: 'it',
+  italian: 'it',
+  hi: 'hi',
+  hindi: 'hi',
+  ar: 'ar',
+  arabic: 'ar',
 };
+
+const LANGUAGE_SUFFIX_TOKENS = new Set([
+  'en',
+  'english',
+  'es',
+  'sp',
+  'spanish',
+  'fr',
+  'french',
+  'de',
+  'german',
+  'pt',
+  'portuguese',
+  'ja',
+  'japanese',
+  'ko',
+  'korean',
+  'zh',
+  'chinese',
+  'it',
+  'italian',
+  'hi',
+  'hindi',
+  'ar',
+  'arabic',
+]);
 
 type S3ObjectCreatedDetail = {
   bucket: {
@@ -178,8 +221,11 @@ const stripDocxPlaceholders = (buffer: Buffer): Buffer => {
   }
 };
 
-const languageLabel = (code: string) => LANGUAGE_LABELS[code.toLowerCase()] ?? code;
 const normalizeLangCode = (code?: string) => code?.toLowerCase().split('-')[0];
+const languageSlug = (code: string) => {
+  const normalized = normalizeLangCode(code) ?? code.toLowerCase();
+  return LANGUAGE_FILENAME_SLUGS[normalized] ?? normalized;
+};
 
 const detectLanguageFromText = async (text: string) => {
   const snippet = text.trim().slice(0, 4500);
@@ -196,12 +242,29 @@ const detectLanguageFromText = async (text: string) => {
   return { code: normalizeLangCode(top.LanguageCode), score: top.Score ?? 0 };
 };
 
-const buildSuffix = (targetLanguage: string) =>
-  `-${languageLabel(targetLanguage).replace(/\s+/g, '')}`;
+const buildSuffix = (targetLanguage: string) => `_${languageSlug(targetLanguage)}`;
+
+const stripLanguageSuffix = (base: string) => {
+  if (!base) return 'document';
+
+  for (const separator of ['-', '_']) {
+    const parts = base.split(separator);
+    if (parts.length <= 1) continue;
+    const last = parts[parts.length - 1].toLowerCase();
+    if (LANGUAGE_SUFFIX_TOKENS.has(last)) {
+      const trimmed = parts.slice(0, -1).join(separator);
+      return trimmed || 'document';
+    }
+  }
+
+  return base;
+};
 
 const buildOutputFileName = (originalName: string, suffix: string, extension: string) => {
-  const base = originalName.replace(/\.[^.]+$/, '') || 'document';
-  return `${base}${suffix}.${extension}`;
+  const rawBase = originalName.replace(/\.[^.]+$/, '') || 'document';
+  const base = stripLanguageSuffix(rawBase);
+  const normalizedSuffix = suffix.startsWith('_') ? suffix : `_${suffix}`;
+  return `${base}${normalizedSuffix}.${extension}`;
 };
 
 const xmlParser = new XMLParser({ ignoreAttributes: false, allowBooleanAttributes: true });

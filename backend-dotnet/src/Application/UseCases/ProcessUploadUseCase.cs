@@ -1,3 +1,4 @@
+using System.IO;
 using System.Text;
 using TranslateDemo.Application.Contracts;
 using TranslateDemo.Domain.Abstractions;
@@ -7,13 +8,36 @@ using TranslateDemo.Domain.ValueObjects;
 
 namespace TranslateDemo.Application.UseCases;
 
-public sealed class ProcessUploadUseCase
-{
-    private readonly IJobRepository _jobs;
-    private readonly IStorageService _storage;
-    private readonly ITextExtractor _extractor;
-    private readonly ITranslator _translator;
-    private readonly ILanguageDetector _detector;
+    public sealed class ProcessUploadUseCase
+    {
+        private static readonly HashSet<string> LanguageTokens = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "en", "english", "es", "spanish", "sp", "fr", "french", "de", "german", "pt", "portuguese",
+            "ja", "japanese"
+        };
+
+        private static readonly Dictionary<string, string> LanguageSlugs = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["en"] = "en",
+            ["english"] = "en",
+            ["es"] = "sp",
+            ["spanish"] = "sp",
+            ["sp"] = "sp",
+            ["fr"] = "fr",
+            ["french"] = "fr",
+            ["de"] = "de",
+            ["german"] = "de",
+            ["pt"] = "pt",
+            ["portuguese"] = "pt",
+            ["ja"] = "ja",
+            ["japanese"] = "ja"
+        };
+
+        private readonly IJobRepository _jobs;
+        private readonly IStorageService _storage;
+        private readonly ITextExtractor _extractor;
+        private readonly ITranslator _translator;
+        private readonly ILanguageDetector _detector;
     private readonly IXmlBuilder _xmlBuilder;
 
     public ProcessUploadUseCase(
@@ -173,10 +197,40 @@ public sealed class ProcessUploadUseCase
 
     private static string CreateFileName(string originalName, string lang, string extension)
     {
-        var baseName = string.IsNullOrWhiteSpace(originalName)
-            ? "document"
-            : originalName.Replace(".docx", string.Empty).Replace(".pdf", string.Empty);
-        return $"{baseName}-{lang}.{extension}";
+        var stem = Path.GetFileNameWithoutExtension(string.IsNullOrWhiteSpace(originalName) ? "document" : originalName);
+        stem = TrimLanguageSuffix(stem);
+        var suffix = NormalizeLanguageSlug(lang);
+        return $"{stem}_{suffix}.{extension}";
+    }
+
+    private static string TrimLanguageSuffix(string stem)
+    {
+        if (string.IsNullOrWhiteSpace(stem)) return "document";
+
+        foreach (var separator in new[] { "-", "_" })
+        {
+            var parts = stem.Split(separator, StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length <= 1) continue;
+            var last = parts[^1];
+            if (LanguageTokens.Contains(last))
+            {
+                var rebuilt = string.Join(separator, parts[..^1]);
+                return string.IsNullOrWhiteSpace(rebuilt) ? "document" : rebuilt;
+            }
+        }
+
+        return stem;
+    }
+
+    private static string NormalizeLanguageSlug(string code)
+    {
+        var normalized = NormalizeCode(code);
+        if (LanguageSlugs.TryGetValue(normalized, out var slug))
+        {
+            return slug;
+        }
+
+        return string.IsNullOrWhiteSpace(normalized) ? "xx" : normalized;
     }
 
     private sealed record BuildResult(byte[] Payload, string ContentType, string Key);

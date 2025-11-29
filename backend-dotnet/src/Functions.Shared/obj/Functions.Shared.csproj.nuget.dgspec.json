@@ -75,6 +75,11 @@
           },
           "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/10.0.100/PortableRuntimeIdentifierGraph.json"
         }
+      },
+      "runtimes": {
+        "osx-arm64": {
+          "#import": []
+        }
       }
     },
     "/Users/federicotafur/Desktop/NexaDev/Transalte/backend-dotnet/src/Domain/Domain.csproj": {
@@ -143,6 +148,11 @@
             }
           },
           "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/10.0.100/PortableRuntimeIdentifierGraph.json"
+        }
+      },
+      "runtimes": {
+        "osx-arm64": {
+          "#import": []
         }
       }
     },
@@ -225,6 +235,11 @@
             }
           },
           "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/10.0.100/PortableRuntimeIdentifierGraph.json"
+        }
+      },
+      "runtimes": {
+        "osx-arm64": {
+          "#import": []
         }
       }
     },
@@ -320,6 +335,11 @@
             }
           },
           "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/10.0.100/PortableRuntimeIdentifierGraph.json"
+        }
+      },
+      "runtimes": {
+        "osx-arm64": {
+          "#import": []
         }
       }
     }

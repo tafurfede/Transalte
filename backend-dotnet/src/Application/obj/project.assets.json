@@ -12,6 +12,18 @@
           "bin/placeholder/Domain.dll": {}
         }
       }
+    },
+    "net8.0/osx-arm64": {
+      "Domain/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v8.0",
+        "compile": {
+          "bin/placeholder/Domain.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/Domain.dll": {}
+        }
+      }
     }
   },
   "libraries": {
@@ -99,6 +111,11 @@
           }
         },
         "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/10.0.100/PortableRuntimeIdentifierGraph.json"
+      }
+    },
+    "runtimes": {
+      "osx-arm64": {
+        "#import": []
       }
     }
   }
