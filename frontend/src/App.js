@@ -19,7 +19,7 @@ const MAX_FILES_PER_BATCH = 10;
 function App() {
     const [selectedFiles, setSelectedFiles] = useState([]);
     const [targetLanguage, setTargetLanguage] = useState('es');
-    const [targetFormat, setTargetFormat] = useState('docx');
+    const [targetFormat, setTargetFormat] = useState('xml');
     const [jobs, setJobs] = useState({});
     const [error, setError] = useState('');
     const [isUploading, setUploading] = useState(false);
