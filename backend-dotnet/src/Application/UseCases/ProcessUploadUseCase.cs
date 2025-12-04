@@ -8,36 +8,36 @@ using TranslateDemo.Domain.ValueObjects;
 
 namespace TranslateDemo.Application.UseCases;
 
-    public sealed class ProcessUploadUseCase
+public sealed class ProcessUploadUseCase
+{
+    private static readonly HashSet<string> LanguageTokens = new(StringComparer.OrdinalIgnoreCase)
     {
-        private static readonly HashSet<string> LanguageTokens = new(StringComparer.OrdinalIgnoreCase)
-        {
-            "en", "english", "es", "spanish", "sp", "fr", "french", "de", "german", "pt", "portuguese",
-            "ja", "japanese"
-        };
+        "en", "english", "es", "spanish", "sp", "fr", "french", "de", "german", "pt", "portuguese",
+        "ja", "japanese"
+    };
 
-        private static readonly Dictionary<string, string> LanguageSlugs = new(StringComparer.OrdinalIgnoreCase)
-        {
-            ["en"] = "en",
-            ["english"] = "en",
-            ["es"] = "sp",
-            ["spanish"] = "sp",
-            ["sp"] = "sp",
-            ["fr"] = "fr",
-            ["french"] = "fr",
-            ["de"] = "de",
-            ["german"] = "de",
-            ["pt"] = "pt",
-            ["portuguese"] = "pt",
-            ["ja"] = "ja",
-            ["japanese"] = "ja"
-        };
+    private static readonly Dictionary<string, string> LanguageSlugs = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["en"] = "en",
+        ["english"] = "en",
+        ["es"] = "sp",
+        ["spanish"] = "sp",
+        ["sp"] = "sp",
+        ["fr"] = "fr",
+        ["french"] = "fr",
+        ["de"] = "de",
+        ["german"] = "de",
+        ["pt"] = "pt",
+        ["portuguese"] = "pt",
+        ["ja"] = "ja",
+        ["japanese"] = "ja"
+    };
 
-        private readonly IJobRepository _jobs;
-        private readonly IStorageService _storage;
-        private readonly ITextExtractor _extractor;
-        private readonly ITranslator _translator;
-        private readonly ILanguageDetector _detector;
+    private readonly IJobRepository _jobs;
+    private readonly IStorageService _storage;
+    private readonly ITextExtractor _extractor;
+    private readonly ITranslator _translator;
+    private readonly ILanguageDetector _detector;
     private readonly IXmlBuilder _xmlBuilder;
 
     public ProcessUploadUseCase(
@@ -81,6 +81,8 @@ namespace TranslateDemo.Application.UseCases;
 
             var translatedText = extracted.Text;
             var targetLang = NormalizeCode(job.TargetLanguage);
+            var sameLanguage = sourceLang != "auto" &&
+                               string.Equals(sourceLang, targetLang, StringComparison.OrdinalIgnoreCase);
 
             if (!string.Equals(sourceLang, targetLang, StringComparison.OrdinalIgnoreCase))
             {
@@ -90,8 +92,8 @@ namespace TranslateDemo.Application.UseCases;
             }
 
             var output = job.OutputFormat == OutputFormat.Xml
-                ? await BuildXmlAsync(job, translatedText, targetLang, ct)
-                : await BuildDocxAsync(job, translatedText, ct);
+                ? await BuildXmlAsync(job, translatedText, sameLanguage, targetLang, ct)
+                : await BuildDocxAsync(job, translatedText, sameLanguage, targetLang, ct);
 
             var verificationCode = await _detector.DetectCodeAsync(translatedText, ct);
             var verificationDetails = verificationCode is null
@@ -121,21 +123,21 @@ namespace TranslateDemo.Application.UseCases;
         return code.Split('-')[0].ToLowerInvariant();
     }
 
-    private async Task<BuildResult> BuildXmlAsync(TranslationJob job, string translatedText, string targetLang, CancellationToken ct)
+    private async Task<BuildResult> BuildXmlAsync(TranslationJob job, string translatedText, bool sameLanguage, string targetLang, CancellationToken ct)
     {
         var cleanText = SanitizeForXml(translatedText);
         var sections = BuildSections(cleanText);
         var metadata = new ReportMetadata("RT", job.JobId, targetLang);
         var result = await _xmlBuilder.BuildAsync(metadata, sections, ct);
-        var key = $"translated/{job.JobId}/{CreateFileName(job.FileName, targetLang, "xml")}";
+        var key = $"translated/{job.JobId}/{CreateFileName(job.FileName, sameLanguage, targetLang, "xml")}";
         return new BuildResult(result.Content, result.ContentType, key);
     }
 
-    private async Task<BuildResult> BuildDocxAsync(TranslationJob job, string translatedText, CancellationToken ct)
+    private async Task<BuildResult> BuildDocxAsync(TranslationJob job, string translatedText, bool sameLanguage, string targetLang, CancellationToken ct)
     {
         // Placeholder: reuse text as UTF-8 docx binary is outside the current scope.
         var buffer = Encoding.UTF8.GetBytes(translatedText);
-        var key = $"translated/{job.JobId}/{CreateFileName(job.FileName, job.TargetLanguage, job.FileExtension ?? "txt")}";
+        var key = $"translated/{job.JobId}/{CreateFileName(job.FileName, sameLanguage, targetLang, job.FileExtension ?? "txt")}";
         return await Task.FromResult(new BuildResult(buffer, job.ContentType ?? "text/plain; charset=utf-8", key));
     }
 
@@ -195,10 +197,14 @@ namespace TranslateDemo.Application.UseCases;
         return sections;
     }
 
-    private static string CreateFileName(string originalName, string lang, string extension)
+    private static string CreateFileName(string originalName, bool sameLanguage, string lang, string extension)
     {
         var stem = Path.GetFileNameWithoutExtension(string.IsNullOrWhiteSpace(originalName) ? "document" : originalName);
         stem = TrimLanguageSuffix(stem);
+        if (sameLanguage)
+        {
+            return $"{stem}.{extension}";
+        }
         var suffix = NormalizeLanguageSlug(lang);
         return $"{stem}_{suffix}.{extension}";
     }
