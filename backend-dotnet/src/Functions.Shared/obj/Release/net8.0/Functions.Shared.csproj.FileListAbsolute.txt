@@ -18,3 +18,5 @@
 /Users/federicotafur/Desktop/NexaDev/Transalte/backend-dotnet/src/Functions.Shared/obj/Release/net8.0/refint/Functions.Shared.dll
 /Users/federicotafur/Desktop/NexaDev/Transalte/backend-dotnet/src/Functions.Shared/obj/Release/net8.0/Functions.Shared.pdb
 /Users/federicotafur/Desktop/NexaDev/Transalte/backend-dotnet/src/Functions.Shared/obj/Release/net8.0/ref/Functions.Shared.dll
+/Users/federicotafur/Desktop/NexaDev/Transalte/backend-dotnet/src/Functions.Shared/bin/Release/net8.0/Functions.Shared.runtimeconfig.json
+/Users/federicotafur/Desktop/NexaDev/Transalte/backend-dotnet/src/Functions.Shared/obj/Release/net8.0/Functions.Shared.genruntimeconfig.cache

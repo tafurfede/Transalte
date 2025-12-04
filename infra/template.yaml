@@ -56,7 +56,7 @@ Resources:
   CreateUploadUrlFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: ../artifacts/Functions.Http
+      CodeUri: ../backend-dotnet/src/Functions.Http
       Handler: Functions.Http::TranslateDemo.Functions.Http.UploadFunction::Handler
       Runtime: dotnet8
       Environment:
@@ -79,7 +79,7 @@ Resources:
   GetStatusFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: ../artifacts/Functions.Http
+      CodeUri: ../backend-dotnet/src/Functions.Http
       Handler: Functions.Http::TranslateDemo.Functions.Http.StatusFunction::Handler
       Runtime: dotnet8
       Environment:
@@ -102,7 +102,7 @@ Resources:
   ProcessJobFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: ../artifacts/Functions.Http
+      CodeUri: ../backend-dotnet/src/Functions.Http
       Handler: Functions.Http::TranslateDemo.Functions.Http.ProcessJobFunction::Handler
       Runtime: dotnet8
       Environment:
@@ -134,7 +134,7 @@ Resources:
   ProcessUploadFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: ../artifacts/Functions.S3
+      CodeUri: ../backend-dotnet/src/Functions.S3
       Handler: Functions.S3::TranslateDemo.Functions.S3.ProcessUploadFunction::Handler
       Runtime: dotnet8
       Environment:

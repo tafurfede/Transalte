@@ -27,7 +27,7 @@ type JobState = {
 
 function App() {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-  const [targetLanguage, setTargetLanguage] = useState('en');
+  const [targetLanguage, setTargetLanguage] = useState('es');
   const [targetFormat, setTargetFormat] = useState<'docx' | 'xml'>('docx');
   const [jobs, setJobs] = useState<Record<string, JobState>>({});
   const [error, setError] = useState('');

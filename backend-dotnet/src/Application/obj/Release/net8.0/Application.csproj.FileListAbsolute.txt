@@ -14,3 +14,5 @@
 /Users/federicotafur/Desktop/NexaDev/Transalte/backend-dotnet/src/Application/obj/Release/net8.0/refint/Application.dll
 /Users/federicotafur/Desktop/NexaDev/Transalte/backend-dotnet/src/Application/obj/Release/net8.0/Application.pdb
 /Users/federicotafur/Desktop/NexaDev/Transalte/backend-dotnet/src/Application/obj/Release/net8.0/ref/Application.dll
+/Users/federicotafur/Desktop/NexaDev/Transalte/backend-dotnet/src/Application/bin/Release/net8.0/Application.runtimeconfig.json
+/Users/federicotafur/Desktop/NexaDev/Transalte/backend-dotnet/src/Application/obj/Release/net8.0/Application.genruntimeconfig.cache

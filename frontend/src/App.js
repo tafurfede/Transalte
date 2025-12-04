@@ -18,7 +18,7 @@ const POLL_INTERVAL = 3000;
 const MAX_FILES_PER_BATCH = 10;
 function App() {
     const [selectedFiles, setSelectedFiles] = useState([]);
-    const [targetLanguage, setTargetLanguage] = useState('en');
+    const [targetLanguage, setTargetLanguage] = useState('es');
     const [targetFormat, setTargetFormat] = useState('docx');
     const [jobs, setJobs] = useState({});
     const [error, setError] = useState('');
