@@ -6,59 +6,47 @@ namespace TranslateDemo.Infrastructure.Xml;
 
 public sealed class ReportXmlBuilder : IXmlBuilder
 {
-        public Task<XmlBuildResult> BuildAsync(ReportMetadata metadata, IReadOnlyList<Section> sections, CancellationToken ct = default)
+    public Task<XmlBuildResult> BuildAsync(ReportMetadata metadata, IReadOnlyList<Section> sections, CancellationToken ct = default)
+    {
+        var settings = new XmlWriterSettings
         {
-            var firstParagraph = true;
-            var settings = new XmlWriterSettings
-            {
-                Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false),
-                Indent = true,
-                NewLineChars = "\n",
+            Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false),
+            Indent = true,
+            NewLineChars = "\n",
             ConformanceLevel = ConformanceLevel.Fragment,
             OmitXmlDeclaration = true
         };
 
-            using var ms = new MemoryStream();
-            using (var writer = XmlWriter.Create(ms, settings))
+        using var ms = new MemoryStream();
+        using (var writer = XmlWriter.Create(ms, settings))
+        {
+            for (var sectionIndex = 0; sectionIndex < sections.Count; sectionIndex++)
             {
-                var lastSectionIndex = sections.Count - 1;
+                var section = sections[sectionIndex];
 
-                for (var sectionIndex = 0; sectionIndex < sections.Count; sectionIndex++)
+                if (sectionIndex > 0)
                 {
-                    var section = sections[sectionIndex];
-                    writer.WriteStartElement("p");
-                    if (!firstParagraph)
-                    {
-                        writer.WriteAttributeString("style", "text-align: justify;");
-                    }
-                    writer.WriteString(section.Title);
-                    writer.WriteEndElement(); // p
-                    firstParagraph = false;
-
-                    writer.WriteStartElement("ul");
-                    for (var paragraphIndex = 0; paragraphIndex < section.Paragraphs.Count; paragraphIndex++)
-                    {
-                        var paragraph = section.Paragraphs[paragraphIndex];
-                        var isLastParagraph = sectionIndex == lastSectionIndex &&
-                                              paragraphIndex == section.Paragraphs.Count - 1;
-
-                        writer.WriteStartElement("li");
-                        if (isLastParagraph)
-                        {
-                            writer.WriteString(paragraph);
-                        }
-                        else
-                        {
-                            writer.WriteStartElement("div");
-                            writer.WriteAttributeString("style", "text-align: justify;");
-                            writer.WriteString(paragraph);
-                            writer.WriteEndElement(); // div
-                        }
-                        writer.WriteEndElement(); // li
-                    }
-                    writer.WriteEndElement(); // ul
+                    writer.WriteWhitespace("\n");
                 }
+
+                writer.WriteString(section.Title);
+                writer.WriteWhitespace("\n");
+
+                writer.WriteRaw("<br>");
+                writer.WriteWhitespace("\n");
+
+                writer.WriteStartElement("ul");
+                foreach (var paragraph in section.Paragraphs)
+                {
+                    writer.WriteWhitespace("\n");
+                    writer.WriteStartElement("li");
+                    writer.WriteString(paragraph);
+                    writer.WriteEndElement(); // li
+                }
+                writer.WriteWhitespace("\n");
+                writer.WriteEndElement(); // ul
             }
+        }
 
         var content = ms.ToArray();
         return Task.FromResult(new XmlBuildResult(content, "application/xml", "report.xml"));

@@ -263,8 +263,16 @@ const stripLanguageSuffix = (base: string) => {
 const buildOutputFileName = (originalName: string, suffix: string, extension: string) => {
   const rawBase = originalName.replace(/\.[^.]+$/, '') || 'document';
   const base = stripLanguageSuffix(rawBase);
-  const normalizedSuffix = suffix.startsWith('_') ? suffix : `_${suffix}`;
+  const normalizedSuffix = suffix ? (suffix.startsWith('_') ? suffix : `_${suffix}`) : '';
   return `${base}${normalizedSuffix}.${extension}`;
+};
+
+const shouldAppendLanguageSuffix = (sourceLanguage?: string, targetLanguage?: string) => {
+  const src = normalizeLangCode(sourceLanguage ?? '');
+  const tgt = normalizeLangCode(targetLanguage ?? '');
+  if (!src || !tgt) return true;
+  if (src === 'auto') return true;
+  return src !== tgt;
 };
 
 const xmlParser = new XMLParser({ ignoreAttributes: false, allowBooleanAttributes: true });
@@ -532,7 +540,7 @@ export const handler = async (event: ProcessEvent) => {
 
       const extension = (job.fileExtension || job.fileName?.split('.').pop() || 'txt').toLowerCase();
       const safeFileName = job.fileName || 'document';
-      const suffix = buildSuffix(job.targetLanguage);
+      let suffix = buildSuffix(job.targetLanguage);
 
       let translationAsset: TranslationAsset;
       let sourceLanguage = job.sourceLanguage ?? 'auto';
@@ -545,6 +553,10 @@ export const handler = async (event: ProcessEvent) => {
         if (detected?.code) {
           sourceLanguage = detected.code;
         }
+      }
+
+      if (!shouldAppendLanguageSuffix(sourceLanguage, job.targetLanguage)) {
+        suffix = '';
       }
 
       if (isDocument && documentPairSupported(sourceLanguage, job.targetLanguage)) {

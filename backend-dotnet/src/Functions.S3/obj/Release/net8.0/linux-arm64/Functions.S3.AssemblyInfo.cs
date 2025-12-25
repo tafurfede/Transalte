@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Functions.S3")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c06356a2d522ef6f93d43a6480fda213a41d048b")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b0e5c0c299c51968da16be6a5d1895f4bdbecd30")]
 [assembly: System.Reflection.AssemblyProductAttribute("Functions.S3")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Functions.S3")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
