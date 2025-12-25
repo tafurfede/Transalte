@@ -15,7 +15,7 @@ const FORMATS = [
     { code: 'xml', label: 'XML' },
 ];
 const POLL_INTERVAL = 3000;
-const MAX_FILES_PER_BATCH = 10;
+const MAX_FILES_PER_BATCH = 50;
 function App() {
     const [selectedFiles, setSelectedFiles] = useState([]);
     const [targetLanguage, setTargetLanguage] = useState('es');
@@ -26,6 +26,7 @@ function App() {
     const pollingTimers = useRef({});
     const jobEntries = useMemo(() => Object.entries(jobs), [jobs]);
     const hasActiveJobs = useMemo(() => jobEntries.some(([, data]) => !['COMPLETED', 'FAILED'].includes(data.job.status)), [jobEntries]);
+    const readyDownloads = useMemo(() => jobEntries.filter(([, data]) => data.downloadUrl && data.job.status === 'COMPLETED' && data.job.verificationStatus === 'PASSED'), [jobEntries]);
     const getStatusMessage = useCallback((currentJob) => {
         if (!currentJob)
             return 'Waiting to start translation…';
@@ -49,6 +50,9 @@ function App() {
     }, []);
     useEffect(() => () => {
         Object.values(pollingTimers.current).forEach((timer) => clearTimeout(timer));
+    }, []);
+    const computeDisplayName = useCallback((data) => {
+        return (data.job.outputKey && data.job.outputKey.split('/').pop()) || data.job.fileName;
     }, []);
     const onDrop = useCallback((acceptedFiles) => {
         if (acceptedFiles?.length) {
@@ -103,6 +107,32 @@ function App() {
         };
         run();
     }, [clearTimer, setError]);
+    const downloadAllReady = useCallback(async () => {
+        if (!readyDownloads.length)
+            return;
+        for (const [, data] of readyDownloads) {
+            const displayName = computeDisplayName(data);
+            try {
+                const response = await fetch(data.downloadUrl);
+                if (!response.ok)
+                    throw new Error('Download failed');
+                const blob = await response.blob();
+                const objectUrl = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = objectUrl;
+                link.download = displayName;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(objectUrl);
+            }
+            catch (err) {
+                console.error('Download failed', err);
+                setError('Some files could not be downloaded. Check the console for details.');
+                break;
+            }
+        }
+    }, [computeDisplayName, readyDownloads, setError]);
     const startTranslationForFile = useCallback(async (file) => {
         const extension = file.name.split('.').pop();
         const { jobId: newJobId, upload } = await requestUploadUrl({
@@ -187,8 +217,8 @@ function App() {
         }
         setUploading(false);
     };
-    return (_jsxs("div", { className: "page", children: [_jsxs("header", { children: [_jsx("h1", { children: "TIMS Document Translate" }), _jsx("p", { children: "Securely submit internal documents, choose the destination language, and receive a reviewed translation ready for clients." })] }), _jsxs("section", { className: "card", children: [_jsxs("div", { className: `dropzone ${isDragActive ? 'active' : ''}`, ...getRootProps(), children: [_jsx("input", { ...getInputProps() }), selectedFiles.length ? (_jsxs("div", { children: [_jsxs("p", { children: [selectedFiles.length, " file", selectedFiles.length === 1 ? '' : 's', " selected (max ", MAX_FILES_PER_BATCH, " per batch)"] }), _jsx("ul", { className: "file-list", children: selectedFiles.map((file) => (_jsx("li", { children: file.name }, `${file.name}-${file.lastModified}`))) })] })) : (_jsxs("p", { children: ["Drag & drop up to ", MAX_FILES_PER_BATCH, " .txt/.md/.json/.docx/.pdf files, or click to select"] }))] }), _jsxs("label", { className: "language-picker", children: ["Target language", _jsx("select", { value: targetLanguage, onChange: (e) => setTargetLanguage(e.target.value), children: LANGUAGES.map((language) => (_jsx("option", { value: language.code, children: language.label }, language.code))) })] }), _jsxs("label", { className: "language-picker", children: ["Target format", _jsx("select", { value: targetFormat, onChange: (e) => setTargetFormat(e.target.value), children: FORMATS.map((format) => (_jsx("option", { value: format.code, children: format.label }, format.code))) })] }), _jsx("button", { className: "primary", onClick: handleUpload, disabled: disabled, children: isUploading ? 'Uploading…' : 'Start translations' }), error && _jsx("p", { className: "error", children: error })] }), _jsxs("section", { className: "card", children: [_jsx("h2", { children: "Status" }), !jobEntries.length && _jsx("p", { children: "No active jobs yet." }), jobEntries.length > 0 && (_jsxs(_Fragment, { children: [hasActiveJobs && _jsx("p", { className: "muted", children: "Polling AWS for updates\u2026" }), _jsx("ul", { className: "job-list", children: jobEntries.map(([jobId, data]) => {
-                                    const displayName = (data.job.outputKey && data.job.outputKey.split('/').pop()) || data.job.fileName;
+    return (_jsxs("div", { className: "page", children: [_jsxs("header", { children: [_jsx("h1", { children: "TIMS Document Translate" }), _jsx("p", { children: "Securely submit internal documents, choose the destination language, and receive a reviewed translation ready for clients." })] }), _jsxs("section", { className: "card", children: [_jsxs("div", { className: `dropzone ${isDragActive ? 'active' : ''}`, ...getRootProps(), children: [_jsx("input", { ...getInputProps() }), selectedFiles.length ? (_jsxs("div", { children: [_jsxs("p", { children: [selectedFiles.length, " file", selectedFiles.length === 1 ? '' : 's', " selected (max ", MAX_FILES_PER_BATCH, " per batch)"] }), _jsx("ul", { className: "file-list", children: selectedFiles.map((file) => (_jsx("li", { children: file.name }, `${file.name}-${file.lastModified}`))) })] })) : (_jsxs("p", { children: ["Drag & drop up to ", MAX_FILES_PER_BATCH, " .txt/.md/.json/.docx/.pdf files, or click to select"] }))] }), _jsxs("label", { className: "language-picker", children: ["Target language", _jsx("select", { value: targetLanguage, onChange: (e) => setTargetLanguage(e.target.value), children: LANGUAGES.map((language) => (_jsx("option", { value: language.code, children: language.label }, language.code))) })] }), _jsxs("label", { className: "language-picker", children: ["Target format", _jsx("select", { value: targetFormat, onChange: (e) => setTargetFormat(e.target.value), children: FORMATS.map((format) => (_jsx("option", { value: format.code, children: format.label }, format.code))) })] }), _jsx("button", { className: "primary", onClick: handleUpload, disabled: disabled, children: isUploading ? 'Uploading…' : 'Start translations' }), error && _jsx("p", { className: "error", children: error })] }), _jsxs("section", { className: "card", children: [_jsx("h2", { children: "Status" }), !jobEntries.length && _jsx("p", { children: "No active jobs yet." }), jobEntries.length > 0 && (_jsxs(_Fragment, { children: [hasActiveJobs && _jsx("p", { className: "muted", children: "Polling AWS for updates\u2026" }), readyDownloads.length > 0 && (_jsx("button", { className: "primary", onClick: downloadAllReady, children: "Download all ready files" })), _jsx("ul", { className: "job-list", children: jobEntries.map(([jobId, data]) => {
+                                    const displayName = computeDisplayName(data);
                                     return (_jsxs("li", { className: "job-row", children: [_jsxs("div", { children: [_jsx("strong", { children: displayName }), _jsx("p", { className: "muted", children: getStatusMessage(data.job) }), data.job.status === 'FAILED' && data.job.errorMessage && (_jsx("p", { className: "error", children: data.job.errorMessage }))] }), data.downloadUrl &&
                                                 data.job.status === 'COMPLETED' &&
                                                 data.job.verificationStatus === 'PASSED' && (_jsx("a", { href: data.downloadUrl, className: "primary", target: "_blank", rel: "noreferrer", download: displayName, children: "Download" }))] }, jobId));

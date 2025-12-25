@@ -92,13 +92,9 @@ public sealed class ProcessUploadUseCase
             }
 
             var verificationCode = await _detector.DetectCodeAsync(translatedText, ct);
-            var sameLanguageForName = sameLanguage ||
-                                      (verificationCode != null &&
-                                       string.Equals(verificationCode, targetLang, StringComparison.OrdinalIgnoreCase));
-
             var output = job.OutputFormat == OutputFormat.Xml
-                ? await BuildXmlAsync(job, translatedText, sameLanguageForName, targetLang, ct)
-                : await BuildDocxAsync(job, translatedText, sameLanguageForName, targetLang, ct);
+                ? await BuildXmlAsync(job, translatedText, sameLanguage, targetLang, ct)
+                : await BuildDocxAsync(job, translatedText, sameLanguage, targetLang, ct);
 
             var verificationDetails = verificationCode is null
                 ? "Verification inconclusive"

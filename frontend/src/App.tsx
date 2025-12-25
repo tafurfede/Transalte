@@ -18,7 +18,7 @@ const FORMATS = [
 ];
 
 const POLL_INTERVAL = 3000;
-const MAX_FILES_PER_BATCH = 10;
+const MAX_FILES_PER_BATCH = 50;
 
 type JobState = {
   job: TranslationJob;
@@ -37,6 +37,14 @@ function App() {
   const jobEntries = useMemo(() => Object.entries(jobs), [jobs]);
   const hasActiveJobs = useMemo(
     () => jobEntries.some(([, data]) => !['COMPLETED', 'FAILED'].includes(data.job.status)),
+    [jobEntries],
+  );
+  const readyDownloads = useMemo(
+    () =>
+      jobEntries.filter(
+        ([, data]) =>
+          data.downloadUrl && data.job.status === 'COMPLETED' && data.job.verificationStatus === 'PASSED',
+      ),
     [jobEntries],
   );
 
@@ -66,6 +74,10 @@ function App() {
     },
     [],
   );
+
+  const computeDisplayName = useCallback((data: JobState) => {
+    return (data.job.outputKey && data.job.outputKey.split('/').pop()) || data.job.fileName;
+  }, []);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles?.length) {
@@ -127,6 +139,31 @@ function App() {
     },
     [clearTimer, setError],
   );
+
+  const downloadAllReady = useCallback(async () => {
+    if (!readyDownloads.length) return;
+
+    for (const [, data] of readyDownloads) {
+      const displayName = computeDisplayName(data);
+      try {
+        const response = await fetch(data.downloadUrl);
+        if (!response.ok) throw new Error('Download failed');
+        const blob = await response.blob();
+        const objectUrl = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = objectUrl;
+        link.download = displayName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(objectUrl);
+      } catch (err) {
+        console.error('Download failed', err);
+        setError('Some files could not be downloaded. Check the console for details.');
+        break;
+      }
+    }
+  }, [computeDisplayName, readyDownloads, setError]);
 
   const startTranslationForFile = useCallback(
     async (file: File) => {
@@ -287,10 +324,14 @@ function App() {
         {jobEntries.length > 0 && (
           <>
             {hasActiveJobs && <p className="muted">Polling AWS for updates…</p>}
+            {readyDownloads.length > 0 && (
+              <button className="primary" onClick={downloadAllReady}>
+                Download all ready files
+              </button>
+            )}
             <ul className="job-list">
               {jobEntries.map(([jobId, data]) => {
-                const displayName =
-                  (data.job.outputKey && data.job.outputKey.split('/').pop()) || data.job.fileName;
+                const displayName = computeDisplayName(data);
                 return (
                   <li key={jobId} className="job-row">
                     <div>

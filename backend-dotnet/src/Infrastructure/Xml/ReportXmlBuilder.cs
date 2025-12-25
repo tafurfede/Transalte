@@ -29,10 +29,9 @@ public sealed class ReportXmlBuilder : IXmlBuilder
                     writer.WriteWhitespace("\n");
                 }
 
+                writer.WriteStartElement("p");
                 writer.WriteString(section.Title);
-                writer.WriteWhitespace("\n");
-
-                writer.WriteRaw("<br>");
+                writer.WriteEndElement(); // p
                 writer.WriteWhitespace("\n");
 
                 writer.WriteStartElement("ul");
