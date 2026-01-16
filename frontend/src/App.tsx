@@ -1,5 +1,36 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
+import {
+  Alert,
+  Box,
+  Button,
+  Card,
+  CardContent,
+  Chip,
+  CircularProgress,
+  Container,
+  FormControl,
+  InputLabel,
+  LinearProgress,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
+  MenuItem,
+  Paper,
+  Select,
+  Stack,
+  Typography,
+} from '@mui/material';
+import {
+  CloudUpload,
+  Description,
+  Download,
+  CheckCircle,
+  Error as ErrorIcon,
+  Pending,
+  Translate,
+} from '@mui/icons-material';
 import { fetchStatus, requestUploadUrl, triggerProcess } from './api';
 import { TranslationJob } from './types';
 
@@ -49,15 +80,36 @@ function App() {
   );
 
   const getStatusMessage = useCallback((currentJob?: TranslationJob | null) => {
-    if (!currentJob) return 'Waiting to start translation…';
+    if (!currentJob) return 'Waiting to start translation...';
     if (currentJob.status === 'FAILED') return currentJob.errorMessage ?? 'Translation failed';
-    if (currentJob.status === 'VERIFYING') return 'Checking translated file before release…';
+    if (currentJob.status === 'VERIFYING') return 'Verifying translated file...';
     if (currentJob.status === 'COMPLETED') {
       return currentJob.verificationDetails
-        ? `Translation ready (${currentJob.verificationDetails})`
+        ? `Ready (${currentJob.verificationDetails})`
         : 'Translation ready';
     }
-    return `Current status: ${currentJob.status}`;
+    return `${currentJob.status}`;
+  }, []);
+
+  const getStatusColor = useCallback((status: string) => {
+    switch (status) {
+      case 'COMPLETED':
+        return 'success';
+      case 'FAILED':
+        return 'error';
+      case 'IN_PROGRESS':
+      case 'VERIFYING':
+        return 'warning';
+      default:
+        return 'default';
+    }
+  }, []);
+
+  const getStatusIcon = useCallback((status: string, verificationStatus?: string) => {
+    if (status === 'COMPLETED' && verificationStatus === 'PASSED') return <CheckCircle color="success" />;
+    if (status === 'FAILED' || verificationStatus === 'FAILED') return <ErrorIcon color="error" />;
+    if (['IN_PROGRESS', 'VERIFYING', 'UPLOADING', 'QUEUED'].includes(status)) return <CircularProgress size={20} />;
+    return <Pending color="disabled" />;
   }, []);
 
   const clearTimer = useCallback((jobId: string) => {
@@ -82,9 +134,7 @@ function App() {
   const onDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles?.length) {
       if (acceptedFiles.length > MAX_FILES_PER_BATCH) {
-        setError(
-          `Select up to ${MAX_FILES_PER_BATCH} files per batch. Only the first ${MAX_FILES_PER_BATCH} were added.`,
-        );
+        setError(`Max ${MAX_FILES_PER_BATCH} files per batch. Only first ${MAX_FILES_PER_BATCH} were added.`);
       } else {
         setError('');
       }
@@ -129,7 +179,7 @@ function App() {
           }
         } catch (err) {
           console.error(err);
-          setError('Failed to fetch job status. Retrying…');
+          setError('Failed to fetch job status. Retrying...');
           clearTimer(jobId);
           pollingTimers.current[jobId] = setTimeout(run, POLL_INTERVAL * 2);
         }
@@ -159,7 +209,7 @@ function App() {
         URL.revokeObjectURL(objectUrl);
       } catch (err) {
         console.error('Download failed', err);
-        setError('Some files could not be downloaded. Check the console for details.');
+        setError('Some files could not be downloaded.');
         break;
       }
     }
@@ -257,111 +307,226 @@ function App() {
     }
 
     if (encounteredError) {
-      setError('Some files could not be uploaded. Check the console and API logs.');
+      setError('Some files could not be uploaded. Check the console.');
     }
 
     setUploading(false);
   };
 
   return (
-    <div className="page">
-      <header>
-        <h1>TIMS Document Translate</h1>
-        <p>Securely submit internal documents, choose the destination language, and receive a reviewed translation ready for clients.</p>
-      </header>
+    <Box sx={{ minHeight: '100vh', bgcolor: 'grey.100', py: 4 }}>
+      <Container maxWidth="md">
+        {/* Header */}
+        <Box sx={{ textAlign: 'center', mb: 4 }}>
+          <Stack direction="row" spacing={1} justifyContent="center" alignItems="center" sx={{ mb: 1 }}>
+            <Translate sx={{ fontSize: 40, color: 'primary.main' }} />
+            <Typography variant="h4" component="h1" fontWeight="bold">
+              TIMS Document Translate
+            </Typography>
+          </Stack>
+          <Typography variant="body1" color="text.secondary">
+            Securely translate internal documents with automatic language detection and verification
+          </Typography>
+        </Box>
 
-      <section className="card">
-        <div className={`dropzone ${isDragActive ? 'active' : ''}`} {...getRootProps()}>
-          <input {...getInputProps()} />
-          {selectedFiles.length ? (
-            <div>
-              <p>
-                {selectedFiles.length} file{selectedFiles.length === 1 ? '' : 's'} selected (max {MAX_FILES_PER_BATCH} per batch)
-              </p>
-              <ul className="file-list">
-                {selectedFiles.map((file) => (
-                  <li key={`${file.name}-${file.lastModified}`}>{file.name}</li>
-                ))}
-              </ul>
-            </div>
-          ) : (
-            <p>Drag & drop up to {MAX_FILES_PER_BATCH} .txt/.md/.json/.docx/.pdf files, or click to select</p>
-          )}
-        </div>
+        {/* Upload Card */}
+        <Card sx={{ mb: 3 }}>
+          <CardContent>
+            <Typography variant="h6" gutterBottom>
+              Upload Documents
+            </Typography>
 
-        <label className="language-picker">
-          Target language
-          <select value={targetLanguage} onChange={(e) => setTargetLanguage(e.target.value)}>
-            {LANGUAGES.map((language) => (
-              <option key={language.code} value={language.code}>
-                {language.label}
-              </option>
-            ))}
-          </select>
-        </label>
+            {/* Dropzone */}
+            <Paper
+              {...getRootProps()}
+              sx={{
+                p: 4,
+                mb: 3,
+                border: '2px dashed',
+                borderColor: isDragActive ? 'primary.main' : 'grey.300',
+                bgcolor: isDragActive ? 'primary.50' : 'grey.50',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                '&:hover': {
+                  borderColor: 'primary.main',
+                  bgcolor: 'primary.50',
+                },
+              }}
+            >
+              <input {...getInputProps()} />
+              <Box sx={{ textAlign: 'center' }}>
+                <CloudUpload sx={{ fontSize: 48, color: 'primary.main', mb: 1 }} />
+                {selectedFiles.length ? (
+                  <>
+                    <Typography variant="body1" fontWeight="medium">
+                      {selectedFiles.length} file{selectedFiles.length === 1 ? '' : 's'} selected
+                    </Typography>
+                    <Stack
+                      direction="row"
+                      spacing={1}
+                      flexWrap="wrap"
+                      justifyContent="center"
+                      sx={{ mt: 1, gap: 1 }}
+                    >
+                      {selectedFiles.slice(0, 5).map((file) => (
+                        <Chip
+                          key={`${file.name}-${file.lastModified}`}
+                          icon={<Description />}
+                          label={file.name}
+                          size="small"
+                          variant="outlined"
+                        />
+                      ))}
+                      {selectedFiles.length > 5 && (
+                        <Chip label={`+${selectedFiles.length - 5} more`} size="small" />
+                      )}
+                    </Stack>
+                  </>
+                ) : (
+                  <>
+                    <Typography variant="body1">
+                      Drag & drop files here, or click to select
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Supports .txt, .md, .json, .docx, .pdf (max 5MB each)
+                    </Typography>
+                  </>
+                )}
+              </Box>
+            </Paper>
 
-        <label className="language-picker">
-          Target format
-          <select value={targetFormat} onChange={(e) => setTargetFormat(e.target.value as 'docx' | 'xml')}>
-            {FORMATS.map((format) => (
-              <option key={format.code} value={format.code}>
-                {format.label}
-              </option>
-            ))}
-          </select>
-        </label>
+            {/* Options */}
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mb: 3 }}>
+              <FormControl fullWidth>
+                <InputLabel>Target Language</InputLabel>
+                <Select
+                  value={targetLanguage}
+                  label="Target Language"
+                  onChange={(e) => setTargetLanguage(e.target.value)}
+                >
+                  {LANGUAGES.map((lang) => (
+                    <MenuItem key={lang.code} value={lang.code}>
+                      {lang.label}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
 
-        <button className="primary" onClick={handleUpload} disabled={disabled}>
-          {isUploading ? 'Uploading…' : 'Start translations'}
-        </button>
+              <FormControl fullWidth>
+                <InputLabel>Output Format</InputLabel>
+                <Select
+                  value={targetFormat}
+                  label="Output Format"
+                  onChange={(e) => setTargetFormat(e.target.value as 'docx' | 'xml')}
+                >
+                  {FORMATS.map((format) => (
+                    <MenuItem key={format.code} value={format.code}>
+                      {format.label}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Stack>
 
-        {error && <p className="error">{error}</p>}
-      </section>
+            {/* Upload Button */}
+            <Button
+              variant="contained"
+              size="large"
+              fullWidth
+              disabled={disabled}
+              onClick={handleUpload}
+              startIcon={isUploading ? <CircularProgress size={20} color="inherit" /> : <CloudUpload />}
+            >
+              {isUploading ? 'Uploading...' : 'Start Translation'}
+            </Button>
 
-      <section className="card">
-        <h2>Status</h2>
-        {!jobEntries.length && <p>No active jobs yet.</p>}
-        {jobEntries.length > 0 && (
-          <>
-            {hasActiveJobs && <p className="muted">Polling AWS for updates…</p>}
-            {readyDownloads.length > 0 && (
-              <button className="primary" onClick={downloadAllReady}>
-                Download all ready files
-              </button>
+            {error && (
+              <Alert severity="error" sx={{ mt: 2 }}>
+                {error}
+              </Alert>
             )}
-            <ul className="job-list">
-              {jobEntries.map(([jobId, data]) => {
-                const displayName = computeDisplayName(data);
-                return (
-                  <li key={jobId} className="job-row">
-                    <div>
-                      <strong>{displayName}</strong>
-                      <p className="muted">{getStatusMessage(data.job)}</p>
-                      {data.job.status === 'FAILED' && data.job.errorMessage && (
-                        <p className="error">{data.job.errorMessage}</p>
-                      )}
-                    </div>
-                    {data.downloadUrl &&
-                      data.job.status === 'COMPLETED' &&
-                      data.job.verificationStatus === 'PASSED' && (
-                        <a
-                          href={data.downloadUrl}
-                          className="primary"
-                          target="_blank"
-                          rel="noreferrer"
-                          download={displayName}
-                        >
-                          Download
-                        </a>
-                      )}
-                  </li>
-                );
-              })}
-            </ul>
-          </>
-        )}
-      </section>
-    </div>
+          </CardContent>
+        </Card>
+
+        {/* Status Card */}
+        <Card>
+          <CardContent>
+            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+              <Typography variant="h6">Translation Status</Typography>
+              {readyDownloads.length > 0 && (
+                <Button
+                  variant="contained"
+                  color="success"
+                  startIcon={<Download />}
+                  onClick={downloadAllReady}
+                >
+                  Download All ({readyDownloads.length})
+                </Button>
+              )}
+            </Stack>
+
+            {hasActiveJobs && <LinearProgress sx={{ mb: 2 }} />}
+
+            {!jobEntries.length ? (
+              <Box sx={{ textAlign: 'center', py: 4 }}>
+                <Pending sx={{ fontSize: 48, color: 'grey.400', mb: 1 }} />
+                <Typography color="text.secondary">No translations yet</Typography>
+              </Box>
+            ) : (
+              <List disablePadding>
+                {jobEntries.map(([jobId, data]) => {
+                  const displayName = computeDisplayName(data);
+                  const canDownload =
+                    data.downloadUrl &&
+                    data.job.status === 'COMPLETED' &&
+                    data.job.verificationStatus === 'PASSED';
+
+                  return (
+                    <ListItem
+                      key={jobId}
+                      divider
+                      secondaryAction={
+                        canDownload && (
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            startIcon={<Download />}
+                            href={data.downloadUrl}
+                            target="_blank"
+                            download={displayName}
+                          >
+                            Download
+                          </Button>
+                        )
+                      }
+                    >
+                      <ListItemIcon>
+                        {getStatusIcon(data.job.status, data.job.verificationStatus)}
+                      </ListItemIcon>
+                      <ListItemText
+                        primary={displayName}
+                        secondary={
+                          <Stack direction="row" spacing={1} alignItems="center">
+                            <Chip
+                              label={data.job.status}
+                              size="small"
+                              color={getStatusColor(data.job.status) as any}
+                            />
+                            <Typography variant="caption" color="text.secondary">
+                              {getStatusMessage(data.job)}
+                            </Typography>
+                          </Stack>
+                        }
+                      />
+                    </ListItem>
+                  );
+                })}
+              </List>
+            )}
+          </CardContent>
+        </Card>
+      </Container>
+    </Box>
   );
 }
 

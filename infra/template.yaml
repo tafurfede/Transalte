@@ -155,6 +155,22 @@ Resources:
                 - translate:TranslateDocument
                 - comprehend:DetectDominantLanguage
               Resource: '*'
+      Events:
+        S3Upload:
+          Type: EventBridgeRule
+          Properties:
+            Pattern:
+              source:
+                - aws.s3
+              detail-type:
+                - Object Created
+              detail:
+                bucket:
+                  name:
+                    - !Ref UploadBucket
+                object:
+                  key:
+                    - prefix: 'raw/'
 
 Outputs:
   ApiUrl:

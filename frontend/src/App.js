@@ -1,6 +1,8 @@
 import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
+import { Alert, Box, Button, Card, CardContent, Chip, CircularProgress, Container, FormControl, InputLabel, LinearProgress, List, ListItem, ListItemIcon, ListItemText, MenuItem, Paper, Select, Stack, Typography, } from '@mui/material';
+import { CloudUpload, Description, Download, CheckCircle, Error as ErrorIcon, Pending, Translate, } from '@mui/icons-material';
 import { fetchStatus, requestUploadUrl, triggerProcess } from './api';
 const LANGUAGES = [
     { code: 'en', label: 'English' },
@@ -29,17 +31,39 @@ function App() {
     const readyDownloads = useMemo(() => jobEntries.filter(([, data]) => data.downloadUrl && data.job.status === 'COMPLETED' && data.job.verificationStatus === 'PASSED'), [jobEntries]);
     const getStatusMessage = useCallback((currentJob) => {
         if (!currentJob)
-            return 'Waiting to start translation…';
+            return 'Waiting to start translation...';
         if (currentJob.status === 'FAILED')
             return currentJob.errorMessage ?? 'Translation failed';
         if (currentJob.status === 'VERIFYING')
-            return 'Checking translated file before release…';
+            return 'Verifying translated file...';
         if (currentJob.status === 'COMPLETED') {
             return currentJob.verificationDetails
-                ? `Translation ready (${currentJob.verificationDetails})`
+                ? `Ready (${currentJob.verificationDetails})`
                 : 'Translation ready';
         }
-        return `Current status: ${currentJob.status}`;
+        return `${currentJob.status}`;
+    }, []);
+    const getStatusColor = useCallback((status) => {
+        switch (status) {
+            case 'COMPLETED':
+                return 'success';
+            case 'FAILED':
+                return 'error';
+            case 'IN_PROGRESS':
+            case 'VERIFYING':
+                return 'warning';
+            default:
+                return 'default';
+        }
+    }, []);
+    const getStatusIcon = useCallback((status, verificationStatus) => {
+        if (status === 'COMPLETED' && verificationStatus === 'PASSED')
+            return _jsx(CheckCircle, { color: "success" });
+        if (status === 'FAILED' || verificationStatus === 'FAILED')
+            return _jsx(ErrorIcon, { color: "error" });
+        if (['IN_PROGRESS', 'VERIFYING', 'UPLOADING', 'QUEUED'].includes(status))
+            return _jsx(CircularProgress, { size: 20 });
+        return _jsx(Pending, { color: "disabled" });
     }, []);
     const clearTimer = useCallback((jobId) => {
         const existing = pollingTimers.current[jobId];
@@ -57,7 +81,7 @@ function App() {
     const onDrop = useCallback((acceptedFiles) => {
         if (acceptedFiles?.length) {
             if (acceptedFiles.length > MAX_FILES_PER_BATCH) {
-                setError(`Select up to ${MAX_FILES_PER_BATCH} files per batch. Only the first ${MAX_FILES_PER_BATCH} were added.`);
+                setError(`Max ${MAX_FILES_PER_BATCH} files per batch. Only first ${MAX_FILES_PER_BATCH} were added.`);
             }
             else {
                 setError('');
@@ -100,7 +124,7 @@ function App() {
             }
             catch (err) {
                 console.error(err);
-                setError('Failed to fetch job status. Retrying…');
+                setError('Failed to fetch job status. Retrying...');
                 clearTimer(jobId);
                 pollingTimers.current[jobId] = setTimeout(run, POLL_INTERVAL * 2);
             }
@@ -128,7 +152,7 @@ function App() {
             }
             catch (err) {
                 console.error('Download failed', err);
-                setError('Some files could not be downloaded. Check the console for details.');
+                setError('Some files could not be downloaded.');
                 break;
             }
         }
@@ -213,15 +237,28 @@ function App() {
             }
         }
         if (encounteredError) {
-            setError('Some files could not be uploaded. Check the console and API logs.');
+            setError('Some files could not be uploaded. Check the console.');
         }
         setUploading(false);
     };
-    return (_jsxs("div", { className: "page", children: [_jsxs("header", { children: [_jsx("h1", { children: "TIMS Document Translate" }), _jsx("p", { children: "Securely submit internal documents, choose the destination language, and receive a reviewed translation ready for clients." })] }), _jsxs("section", { className: "card", children: [_jsxs("div", { className: `dropzone ${isDragActive ? 'active' : ''}`, ...getRootProps(), children: [_jsx("input", { ...getInputProps() }), selectedFiles.length ? (_jsxs("div", { children: [_jsxs("p", { children: [selectedFiles.length, " file", selectedFiles.length === 1 ? '' : 's', " selected (max ", MAX_FILES_PER_BATCH, " per batch)"] }), _jsx("ul", { className: "file-list", children: selectedFiles.map((file) => (_jsx("li", { children: file.name }, `${file.name}-${file.lastModified}`))) })] })) : (_jsxs("p", { children: ["Drag & drop up to ", MAX_FILES_PER_BATCH, " .txt/.md/.json/.docx/.pdf files, or click to select"] }))] }), _jsxs("label", { className: "language-picker", children: ["Target language", _jsx("select", { value: targetLanguage, onChange: (e) => setTargetLanguage(e.target.value), children: LANGUAGES.map((language) => (_jsx("option", { value: language.code, children: language.label }, language.code))) })] }), _jsxs("label", { className: "language-picker", children: ["Target format", _jsx("select", { value: targetFormat, onChange: (e) => setTargetFormat(e.target.value), children: FORMATS.map((format) => (_jsx("option", { value: format.code, children: format.label }, format.code))) })] }), _jsx("button", { className: "primary", onClick: handleUpload, disabled: disabled, children: isUploading ? 'Uploading…' : 'Start translations' }), error && _jsx("p", { className: "error", children: error })] }), _jsxs("section", { className: "card", children: [_jsx("h2", { children: "Status" }), !jobEntries.length && _jsx("p", { children: "No active jobs yet." }), jobEntries.length > 0 && (_jsxs(_Fragment, { children: [hasActiveJobs && _jsx("p", { className: "muted", children: "Polling AWS for updates\u2026" }), readyDownloads.length > 0 && (_jsx("button", { className: "primary", onClick: downloadAllReady, children: "Download all ready files" })), _jsx("ul", { className: "job-list", children: jobEntries.map(([jobId, data]) => {
+    return (_jsx(Box, { sx: { minHeight: '100vh', bgcolor: 'grey.100', py: 4 }, children: _jsxs(Container, { maxWidth: "md", children: [_jsxs(Box, { sx: { textAlign: 'center', mb: 4 }, children: [_jsxs(Stack, { direction: "row", spacing: 1, justifyContent: "center", alignItems: "center", sx: { mb: 1 }, children: [_jsx(Translate, { sx: { fontSize: 40, color: 'primary.main' } }), _jsx(Typography, { variant: "h4", component: "h1", fontWeight: "bold", children: "TIMS Document Translate" })] }), _jsx(Typography, { variant: "body1", color: "text.secondary", children: "Securely translate internal documents with automatic language detection and verification" })] }), _jsx(Card, { sx: { mb: 3 }, children: _jsxs(CardContent, { children: [_jsx(Typography, { variant: "h6", gutterBottom: true, children: "Upload Documents" }), _jsxs(Paper, { ...getRootProps(), sx: {
+                                    p: 4,
+                                    mb: 3,
+                                    border: '2px dashed',
+                                    borderColor: isDragActive ? 'primary.main' : 'grey.300',
+                                    bgcolor: isDragActive ? 'primary.50' : 'grey.50',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s',
+                                    '&:hover': {
+                                        borderColor: 'primary.main',
+                                        bgcolor: 'primary.50',
+                                    },
+                                }, children: [_jsx("input", { ...getInputProps() }), _jsxs(Box, { sx: { textAlign: 'center' }, children: [_jsx(CloudUpload, { sx: { fontSize: 48, color: 'primary.main', mb: 1 } }), selectedFiles.length ? (_jsxs(_Fragment, { children: [_jsxs(Typography, { variant: "body1", fontWeight: "medium", children: [selectedFiles.length, " file", selectedFiles.length === 1 ? '' : 's', " selected"] }), _jsxs(Stack, { direction: "row", spacing: 1, flexWrap: "wrap", justifyContent: "center", sx: { mt: 1, gap: 1 }, children: [selectedFiles.slice(0, 5).map((file) => (_jsx(Chip, { icon: _jsx(Description, {}), label: file.name, size: "small", variant: "outlined" }, `${file.name}-${file.lastModified}`))), selectedFiles.length > 5 && (_jsx(Chip, { label: `+${selectedFiles.length - 5} more`, size: "small" }))] })] })) : (_jsxs(_Fragment, { children: [_jsx(Typography, { variant: "body1", children: "Drag & drop files here, or click to select" }), _jsx(Typography, { variant: "body2", color: "text.secondary", children: "Supports .txt, .md, .json, .docx, .pdf (max 5MB each)" })] }))] })] }), _jsxs(Stack, { direction: { xs: 'column', sm: 'row' }, spacing: 2, sx: { mb: 3 }, children: [_jsxs(FormControl, { fullWidth: true, children: [_jsx(InputLabel, { children: "Target Language" }), _jsx(Select, { value: targetLanguage, label: "Target Language", onChange: (e) => setTargetLanguage(e.target.value), children: LANGUAGES.map((lang) => (_jsx(MenuItem, { value: lang.code, children: lang.label }, lang.code))) })] }), _jsxs(FormControl, { fullWidth: true, children: [_jsx(InputLabel, { children: "Output Format" }), _jsx(Select, { value: targetFormat, label: "Output Format", onChange: (e) => setTargetFormat(e.target.value), children: FORMATS.map((format) => (_jsx(MenuItem, { value: format.code, children: format.label }, format.code))) })] })] }), _jsx(Button, { variant: "contained", size: "large", fullWidth: true, disabled: disabled, onClick: handleUpload, startIcon: isUploading ? _jsx(CircularProgress, { size: 20, color: "inherit" }) : _jsx(CloudUpload, {}), children: isUploading ? 'Uploading...' : 'Start Translation' }), error && (_jsx(Alert, { severity: "error", sx: { mt: 2 }, children: error }))] }) }), _jsx(Card, { children: _jsxs(CardContent, { children: [_jsxs(Stack, { direction: "row", justifyContent: "space-between", alignItems: "center", sx: { mb: 2 }, children: [_jsx(Typography, { variant: "h6", children: "Translation Status" }), readyDownloads.length > 0 && (_jsxs(Button, { variant: "contained", color: "success", startIcon: _jsx(Download, {}), onClick: downloadAllReady, children: ["Download All (", readyDownloads.length, ")"] }))] }), hasActiveJobs && _jsx(LinearProgress, { sx: { mb: 2 } }), !jobEntries.length ? (_jsxs(Box, { sx: { textAlign: 'center', py: 4 }, children: [_jsx(Pending, { sx: { fontSize: 48, color: 'grey.400', mb: 1 } }), _jsx(Typography, { color: "text.secondary", children: "No translations yet" })] })) : (_jsx(List, { disablePadding: true, children: jobEntries.map(([jobId, data]) => {
                                     const displayName = computeDisplayName(data);
-                                    return (_jsxs("li", { className: "job-row", children: [_jsxs("div", { children: [_jsx("strong", { children: displayName }), _jsx("p", { className: "muted", children: getStatusMessage(data.job) }), data.job.status === 'FAILED' && data.job.errorMessage && (_jsx("p", { className: "error", children: data.job.errorMessage }))] }), data.downloadUrl &&
-                                                data.job.status === 'COMPLETED' &&
-                                                data.job.verificationStatus === 'PASSED' && (_jsx("a", { href: data.downloadUrl, className: "primary", target: "_blank", rel: "noreferrer", download: displayName, children: "Download" }))] }, jobId));
-                                }) })] }))] })] }));
+                                    const canDownload = data.downloadUrl &&
+                                        data.job.status === 'COMPLETED' &&
+                                        data.job.verificationStatus === 'PASSED';
+                                    return (_jsxs(ListItem, { divider: true, secondaryAction: canDownload && (_jsx(Button, { variant: "outlined", size: "small", startIcon: _jsx(Download, {}), href: data.downloadUrl, target: "_blank", download: displayName, children: "Download" })), children: [_jsx(ListItemIcon, { children: getStatusIcon(data.job.status, data.job.verificationStatus) }), _jsx(ListItemText, { primary: displayName, secondary: _jsxs(Stack, { direction: "row", spacing: 1, alignItems: "center", children: [_jsx(Chip, { label: data.job.status, size: "small", color: getStatusColor(data.job.status) }), _jsx(Typography, { variant: "caption", color: "text.secondary", children: getStatusMessage(data.job) })] }) })] }, jobId));
+                                }) }))] }) })] }) }));
 }
 export default App;
