@@ -9,9 +9,6 @@ import {
   XCircle,
   Clock,
   AlertCircle,
-  Inbox,
-  Settings,
-  HelpCircle,
 } from 'lucide-react';
 import { fetchStatus, requestUploadUrl, triggerProcess } from './api';
 import { TranslationJob } from './types';
@@ -314,22 +311,6 @@ function App() {
           <div className="sidebar-item active">
             <Upload size={16} />
             <span>Translate</span>
-          </div>
-          <div className="sidebar-item">
-            <Inbox size={16} />
-            <span>History</span>
-          </div>
-
-          <div className="sidebar-spacer" />
-
-          <div className="sidebar-section-label">System</div>
-          <div className="sidebar-item">
-            <Settings size={16} />
-            <span>Settings</span>
-          </div>
-          <div className="sidebar-item">
-            <HelpCircle size={16} />
-            <span>Help</span>
           </div>
         </nav>
 
