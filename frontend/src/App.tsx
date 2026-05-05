@@ -1,36 +1,18 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import {
-  Alert,
-  Box,
-  Button,
-  Card,
-  CardContent,
-  Chip,
-  CircularProgress,
-  Container,
-  FormControl,
-  InputLabel,
-  LinearProgress,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
-  MenuItem,
-  Paper,
-  Select,
-  Stack,
-  Typography,
-} from '@mui/material';
-import {
-  CloudUpload,
-  Description,
+  Languages,
+  Upload,
+  FileText,
   Download,
   CheckCircle,
-  Error as ErrorIcon,
-  Pending,
-  Translate,
-} from '@mui/icons-material';
+  XCircle,
+  Clock,
+  AlertCircle,
+  Inbox,
+  Settings,
+  HelpCircle,
+} from 'lucide-react';
 import { fetchStatus, requestUploadUrl, triggerProcess } from './api';
 import { TranslationJob } from './types';
 
@@ -91,7 +73,7 @@ function App() {
     return `${currentJob.status}`;
   }, []);
 
-  const getStatusColor = useCallback((status: string) => {
+  const getStatusVariant = useCallback((status: string) => {
     switch (status) {
       case 'COMPLETED':
         return 'success';
@@ -103,13 +85,6 @@ function App() {
       default:
         return 'default';
     }
-  }, []);
-
-  const getStatusIcon = useCallback((status: string, verificationStatus?: string) => {
-    if (status === 'COMPLETED' && verificationStatus === 'PASSED') return <CheckCircle color="success" />;
-    if (status === 'FAILED' || verificationStatus === 'FAILED') return <ErrorIcon color="error" />;
-    if (['IN_PROGRESS', 'VERIFYING', 'UPLOADING', 'QUEUED'].includes(status)) return <CircularProgress size={20} />;
-    return <Pending color="disabled" />;
   }, []);
 
   const clearTimer = useCallback((jobId: string) => {
@@ -187,7 +162,7 @@ function App() {
 
       run();
     },
-    [clearTimer, setError],
+    [clearTimer],
   );
 
   const downloadAllReady = useCallback(async () => {
@@ -213,7 +188,7 @@ function App() {
         break;
       }
     }
-  }, [computeDisplayName, readyDownloads, setError]);
+  }, [computeDisplayName, readyDownloads]);
 
   const startTranslationForFile = useCallback(
     async (file: File) => {
@@ -313,220 +288,241 @@ function App() {
     setUploading(false);
   };
 
+  const renderStatusIcon = (status: string, verificationStatus?: string) => {
+    if (status === 'COMPLETED' && verificationStatus === 'PASSED')
+      return <CheckCircle className="icon-success" />;
+    if (status === 'FAILED' || verificationStatus === 'FAILED')
+      return <XCircle className="icon-error" />;
+    if (['IN_PROGRESS', 'VERIFYING', 'UPLOADING', 'QUEUED'].includes(status))
+      return <div className="spinner spinner-sm" />;
+    return <Clock className="icon-pending" />;
+  };
+
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: 'grey.100', py: 4 }}>
-      <Container maxWidth="md">
-        {/* Header */}
-        <Box sx={{ textAlign: 'center', mb: 4 }}>
-          <Stack direction="row" spacing={1} justifyContent="center" alignItems="center" sx={{ mb: 1 }}>
-            <Translate sx={{ fontSize: 40, color: 'primary.main' }} />
-            <Typography variant="h4" component="h1" fontWeight="bold">
-              TIMS Document Translate
-            </Typography>
-          </Stack>
-          <Typography variant="body1" color="text.secondary">
-            Securely translate internal documents with automatic language detection and verification
-          </Typography>
-        </Box>
+    <div className="app-shell">
+      <div className="app-layout">
+        {/* ── Sidebar ── */}
+        <nav className="sidebar">
+          <div className="sidebar-logo">
+            <div className="sidebar-logo-icon">
+              <Languages size={16} />
+            </div>
+            <span className="sidebar-logo-text">TIMS Translate</span>
+          </div>
 
-        {/* Upload Card */}
-        <Card sx={{ mb: 3 }}>
-          <CardContent>
-            <Typography variant="h6" gutterBottom>
-              Upload Documents
-            </Typography>
+          <div className="sidebar-section-label">Main</div>
+          <div className="sidebar-item active">
+            <Upload size={16} />
+            <span>Translate</span>
+          </div>
+          <div className="sidebar-item">
+            <Inbox size={16} />
+            <span>History</span>
+          </div>
 
-            {/* Dropzone */}
-            <Paper
-              {...getRootProps()}
-              sx={{
-                p: 4,
-                mb: 3,
-                border: '2px dashed',
-                borderColor: isDragActive ? 'primary.main' : 'grey.300',
-                bgcolor: isDragActive ? 'primary.50' : 'grey.50',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-                '&:hover': {
-                  borderColor: 'primary.main',
-                  bgcolor: 'primary.50',
-                },
-              }}
-            >
-              <input {...getInputProps()} />
-              <Box sx={{ textAlign: 'center' }}>
-                <CloudUpload sx={{ fontSize: 48, color: 'primary.main', mb: 1 }} />
-                {selectedFiles.length ? (
-                  <>
-                    <Typography variant="body1" fontWeight="medium">
-                      {selectedFiles.length} file{selectedFiles.length === 1 ? '' : 's'} selected
-                    </Typography>
-                    <Stack
-                      direction="row"
-                      spacing={1}
-                      flexWrap="wrap"
-                      justifyContent="center"
-                      sx={{ mt: 1, gap: 1 }}
+          <div className="sidebar-spacer" />
+
+          <div className="sidebar-section-label">System</div>
+          <div className="sidebar-item">
+            <Settings size={16} />
+            <span>Settings</span>
+          </div>
+          <div className="sidebar-item">
+            <HelpCircle size={16} />
+            <span>Help</span>
+          </div>
+        </nav>
+
+        {/* ── Main Content Panel ── */}
+        <main className="main-panel">
+          {/* Page Header */}
+          <div className="page-header">
+            <div>
+              <div className="page-header-left">
+                <Languages size={18} />
+                <h1 className="page-title">Document Translate</h1>
+              </div>
+              <p className="page-subtitle">
+                Securely translate documents with automatic language detection and verification
+              </p>
+            </div>
+          </div>
+
+          {/* Content */}
+          <div className="content-area">
+            {/* Upload Card */}
+            <div className="card">
+              <div className="card-header">
+                <span className="card-title">Upload Documents</span>
+              </div>
+              <div className="card-body">
+                {/* Dropzone */}
+                <div
+                  {...getRootProps()}
+                  className={`dropzone ${isDragActive ? 'active' : ''}`}
+                >
+                  <input {...getInputProps()} />
+                  <div className="dropzone-icon">
+                    <Upload size={28} />
+                  </div>
+                  {selectedFiles.length ? (
+                    <>
+                      <p className="dropzone-text" style={{ fontWeight: 500 }}>
+                        {selectedFiles.length} file{selectedFiles.length === 1 ? '' : 's'} selected
+                      </p>
+                      <div className="file-chips">
+                        {selectedFiles.slice(0, 5).map((file) => (
+                          <span className="file-chip" key={`${file.name}-${file.lastModified}`}>
+                            <FileText size={12} />
+                            {file.name}
+                          </span>
+                        ))}
+                        {selectedFiles.length > 5 && (
+                          <span className="file-chip">+{selectedFiles.length - 5} more</span>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <p className="dropzone-text">Drag & drop files here, or click to select</p>
+                      <p className="dropzone-hint">
+                        Supports .txt, .md, .json, .docx, .pdf (max 5MB each)
+                      </p>
+                    </>
+                  )}
+                </div>
+
+                {/* Options */}
+                <div className="form-row">
+                  <div className="form-group">
+                    <label className="form-label">Target Language</label>
+                    <select
+                      className="form-select"
+                      value={targetLanguage}
+                      onChange={(e) => setTargetLanguage(e.target.value)}
                     >
-                      {selectedFiles.slice(0, 5).map((file) => (
-                        <Chip
-                          key={`${file.name}-${file.lastModified}`}
-                          icon={<Description />}
-                          label={file.name}
-                          size="small"
-                          variant="outlined"
-                        />
+                      {LANGUAGES.map((lang) => (
+                        <option key={lang.code} value={lang.code}>
+                          {lang.label}
+                        </option>
                       ))}
-                      {selectedFiles.length > 5 && (
-                        <Chip label={`+${selectedFiles.length - 5} more`} size="small" />
-                      )}
-                    </Stack>
-                  </>
-                ) : (
-                  <>
-                    <Typography variant="body1">
-                      Drag & drop files here, or click to select
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Supports .txt, .md, .json, .docx, .pdf (max 5MB each)
-                    </Typography>
-                  </>
-                )}
-              </Box>
-            </Paper>
-
-            {/* Options */}
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mb: 3 }}>
-              <FormControl fullWidth>
-                <InputLabel>Target Language</InputLabel>
-                <Select
-                  value={targetLanguage}
-                  label="Target Language"
-                  onChange={(e) => setTargetLanguage(e.target.value)}
-                >
-                  {LANGUAGES.map((lang) => (
-                    <MenuItem key={lang.code} value={lang.code}>
-                      {lang.label}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-
-              <FormControl fullWidth>
-                <InputLabel>Output Format</InputLabel>
-                <Select
-                  value={targetFormat}
-                  label="Output Format"
-                  onChange={(e) => setTargetFormat(e.target.value as 'docx' | 'xml')}
-                >
-                  {FORMATS.map((format) => (
-                    <MenuItem key={format.code} value={format.code}>
-                      {format.label}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Stack>
-
-            {/* Upload Button */}
-            <Button
-              variant="contained"
-              size="large"
-              fullWidth
-              disabled={disabled}
-              onClick={handleUpload}
-              startIcon={isUploading ? <CircularProgress size={20} color="inherit" /> : <CloudUpload />}
-            >
-              {isUploading ? 'Uploading...' : 'Start Translation'}
-            </Button>
-
-            {error && (
-              <Alert severity="error" sx={{ mt: 2 }}>
-                {error}
-              </Alert>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Status Card */}
-        <Card>
-          <CardContent>
-            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
-              <Typography variant="h6">Translation Status</Typography>
-              {readyDownloads.length > 0 && (
-                <Button
-                  variant="contained"
-                  color="success"
-                  startIcon={<Download />}
-                  onClick={downloadAllReady}
-                >
-                  Download All ({readyDownloads.length})
-                </Button>
-              )}
-            </Stack>
-
-            {hasActiveJobs && <LinearProgress sx={{ mb: 2 }} />}
-
-            {!jobEntries.length ? (
-              <Box sx={{ textAlign: 'center', py: 4 }}>
-                <Pending sx={{ fontSize: 48, color: 'grey.400', mb: 1 }} />
-                <Typography color="text.secondary">No translations yet</Typography>
-              </Box>
-            ) : (
-              <List disablePadding>
-                {jobEntries.map(([jobId, data]) => {
-                  const displayName = computeDisplayName(data);
-                  const canDownload =
-                    data.downloadUrl &&
-                    data.job.status === 'COMPLETED' &&
-                    data.job.verificationStatus === 'PASSED';
-
-                  return (
-                    <ListItem
-                      key={jobId}
-                      divider
-                      secondaryAction={
-                        canDownload && (
-                          <Button
-                            variant="outlined"
-                            size="small"
-                            startIcon={<Download />}
-                            href={data.downloadUrl}
-                            target="_blank"
-                            download={displayName}
-                          >
-                            Download
-                          </Button>
-                        )
-                      }
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Output Format</label>
+                    <select
+                      className="form-select"
+                      value={targetFormat}
+                      onChange={(e) => setTargetFormat(e.target.value as 'docx' | 'xml')}
                     >
-                      <ListItemIcon>
-                        {getStatusIcon(data.job.status, data.job.verificationStatus)}
-                      </ListItemIcon>
-                      <ListItemText
-                        primary={displayName}
-                        secondary={
-                          <Stack direction="row" spacing={1} alignItems="center">
-                            <Chip
-                              label={data.job.status}
-                              size="small"
-                              color={getStatusColor(data.job.status) as any}
-                            />
-                            <Typography variant="caption" color="text.secondary">
-                              {getStatusMessage(data.job)}
-                            </Typography>
-                          </Stack>
-                        }
-                      />
-                    </ListItem>
-                  );
-                })}
-              </List>
-            )}
-          </CardContent>
-        </Card>
-      </Container>
-    </Box>
+                      {FORMATS.map((format) => (
+                        <option key={format.code} value={format.code}>
+                          {format.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Upload Button */}
+                <button
+                  className="btn btn-primary btn-full"
+                  disabled={disabled}
+                  onClick={handleUpload}
+                >
+                  {isUploading ? (
+                    <>
+                      <div className="spinner spinner-sm" style={{ borderTopColor: 'var(--admin-bg-panel)' }} />
+                      Uploading...
+                    </>
+                  ) : (
+                    <>
+                      <Upload size={14} />
+                      Start Translation
+                    </>
+                  )}
+                </button>
+
+                {error && (
+                  <div className="alert-error">
+                    <AlertCircle size={14} />
+                    {error}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Status Card */}
+            <div className="card">
+              <div className="card-header">
+                <span className="card-title">Translation Status</span>
+                {readyDownloads.length > 0 && (
+                  <button className="btn btn-success" onClick={downloadAllReady}>
+                    <Download size={14} />
+                    Download All ({readyDownloads.length})
+                  </button>
+                )}
+              </div>
+              <div className="card-body">
+                {hasActiveJobs && (
+                  <div className="progress-bar">
+                    <div className="progress-bar-fill" />
+                  </div>
+                )}
+
+                {!jobEntries.length ? (
+                  <div className="empty-state">
+                    <Clock size={36} />
+                    <p>No translations yet</p>
+                  </div>
+                ) : (
+                  <div className="job-list">
+                    {jobEntries.map(([jobId, data]) => {
+                      const displayName = computeDisplayName(data);
+                      const canDownload =
+                        data.downloadUrl &&
+                        data.job.status === 'COMPLETED' &&
+                        data.job.verificationStatus === 'PASSED';
+
+                      return (
+                        <div className="job-item" key={jobId}>
+                          <div className="job-icon">
+                            {renderStatusIcon(data.job.status, data.job.verificationStatus)}
+                          </div>
+                          <div className="job-info">
+                            <div className="job-name">{displayName}</div>
+                            <div className="job-meta">
+                              <span className={`status-badge ${getStatusVariant(data.job.status)}`}>
+                                {data.job.status}
+                              </span>
+                              <span className="job-message">
+                                {getStatusMessage(data.job)}
+                              </span>
+                            </div>
+                          </div>
+                          {canDownload && (
+                            <a
+                              className="btn btn-outline"
+                              href={data.downloadUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              download={displayName}
+                            >
+                              <Download size={14} />
+                              Download
+                            </a>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
   );
 }
 
